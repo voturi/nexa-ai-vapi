@@ -1,0 +1,74 @@
+# FastAPI and dependencies
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Database (Supabase uses PostgreSQL)
+asyncpg==0.29.0
+sqlalchemy[asyncio]==2.0.25
+alembic==1.13.1
+psycopg2-binary==2.9.9
+
+# Supabase (let pip resolve compatible versions)
+supabase>=2.3,<3.0
+
+# Redis
+redis==5.0.1
+aioredis==2.0.1
+
+# HTTP Client
+httpx>=0.23
+aiohttp>=3.9
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+cryptography==42.0.0
+python-multipart==0.0.6
+
+# VAPI SDK
+# vapi-python (if available, or use direct API calls)
+
+# Twilio
+twilio==8.11.1
+
+# Google Calendar
+google-auth==2.26.2
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.113.0
+
+# HubSpot
+hubspot-api-client==8.2.1
+
+# Stripe
+stripe==7.12.0
+
+# Anthropic (for Claude)
+anthropic>=0.8
+
+# Utilities
+python-dotenv==1.0.0
+structlog==24.1.0
+tenacity==8.2.3
+
+# Testing (install separately if needed to avoid conflicts)
+pytest>=7.4
+pytest-asyncio>=0.23
+pytest-cov>=4.1
+# pytest-httpx>=0.30  # Commented due to httpx version conflict - install manually if needed
+faker>=22.0
+
+# Code Quality
+black==23.12.1
+flake8==7.0.0
+mypy==1.8.0
+isort==5.13.2
+
+# Monitoring
+prometheus-client==0.19.0
+sentry-sdk==1.39.2
+
+
+
