@@ -36,7 +36,7 @@ class TenantService:
         3. Optionally provision VAPI assistant
         4. Optionally provision Twilio number
         """
-        # Create tenant with generated credentials
+        # Create tenant with generated credentials and structured fields
         tenant = Tenant(
             id=uuid.uuid4(),
             business_name=tenant_data.business_name,
@@ -45,6 +45,10 @@ class TenantService:
             email=tenant_data.email,
             timezone=tenant_data.timezone,
             config=tenant_data.config,
+            operating_hours=tenant_data.operating_hours,
+            services=tenant_data.services,
+            booking_rules=tenant_data.booking_rules,
+            ai_behavior=tenant_data.ai_behavior,
             api_key=self._generate_api_key(),
             webhook_secret=self._generate_webhook_secret(),
             subscription_tier="basic",

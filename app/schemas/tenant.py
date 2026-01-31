@@ -1,6 +1,6 @@
 """Tenant schemas."""
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from uuid import UUID
 
@@ -17,6 +17,10 @@ class TenantBase(BaseModel):
 class TenantCreate(TenantBase):
     """Schema for creating a tenant."""
     config: Dict[str, Any] = {}
+    operating_hours: Optional[Dict[str, Any]] = None
+    services: Optional[List[Dict[str, Any]]] = None
+    booking_rules: Optional[Dict[str, Any]] = None
+    ai_behavior: Optional[Dict[str, Any]] = None
 
 
 class TenantUpdate(BaseModel):
@@ -25,6 +29,10 @@ class TenantUpdate(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     config: Optional[Dict[str, Any]] = None
+    operating_hours: Optional[Dict[str, Any]] = None
+    services: Optional[List[Dict[str, Any]]] = None
+    booking_rules: Optional[Dict[str, Any]] = None
+    ai_behavior: Optional[Dict[str, Any]] = None
 
 
 class TenantResponse(TenantBase):
@@ -36,6 +44,12 @@ class TenantResponse(TenantBase):
     subscription_tier: str
     subscription_status: str
     created_at: datetime
+
+    # Include the structured fields in response
+    operating_hours: Optional[Dict[str, Any]] = None
+    services: Optional[List[Dict[str, Any]]] = None
+    booking_rules: Optional[Dict[str, Any]] = None
+    ai_behavior: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True
