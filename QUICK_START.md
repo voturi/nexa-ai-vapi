@@ -11,7 +11,7 @@
 **macOS (using Homebrew):**
 ```bash
 brew install redis
-brew services start redis
+
 
 # Verify Redis is running
 redis-cli ping  # Should return "PONG"

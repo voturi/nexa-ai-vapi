@@ -158,14 +158,24 @@ Services: {tenant_config.get('services', [])}
         """Format dynamic context for prompt."""
         lines = []
 
+        # Make the current date VERY clear for the AI
+        if 'current_date' in context:
+            lines.append(f"TODAY'S DATE: {context['current_date']}")
+
+        if 'current_year' in context:
+            lines.append(f"CURRENT YEAR: {context['current_year']}")
+
+        if 'current_time' in context:
+            lines.append(f"Current time: {context['current_time']}")
+
+        if 'timezone' in context:
+            lines.append(f"Timezone: {context['timezone']}")
+
         if 'availability' in context:
             lines.append(f"Available time slots: {context['availability']}")
 
         if 'caller_history' in context:
             lines.append(f"Caller history: {context['caller_history']}")
-
-        if 'current_time' in context:
-            lines.append(f"Current time: {context['current_time']}")
 
         return '\n'.join(lines)
 
