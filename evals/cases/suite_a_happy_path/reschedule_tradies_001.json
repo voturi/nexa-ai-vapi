@@ -1,0 +1,59 @@
+{
+  "case_id": "reschedule_tradies_001",
+  "description": "Caller reschedules an existing plumbing appointment to a different day",
+  "business_domain": "tradies",
+  "scenario_type": "reschedule",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I need to reschedule my plumbing appointment that's booked for Wednesday",
+    "Could we move it to Friday instead? Same time, 10am",
+    "Friday 10am works perfectly, cheers"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "reschedule_booking",
+    "slots": {
+      "original_date": "Wednesday",
+      "new_date": "Friday"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Must check availability on the new date before confirming",
+      "Must confirm the new booking details clearly"
+    ],
+    "forbidden_actions": [
+      "Confirm reschedule without checking Friday availability"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["reschedule", "tradies", "happy_path"]
+}

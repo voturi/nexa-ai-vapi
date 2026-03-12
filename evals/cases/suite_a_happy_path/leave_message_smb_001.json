@@ -1,0 +1,62 @@
+{
+  "case_id": "leave_message_smb_001",
+  "description": "Caller leaves a message for the accountant to call back about an invoice",
+  "business_domain": "smb_general",
+  "scenario_type": "leave_message",
+  "priority": "medium",
+  "risk_tier": "P2",
+  "caller_turns": [
+    "Hi, could I leave a message for Jane please?",
+    "I'm calling about invoice number 1042, there seems to be an error. I'm Rachel White, my number is 0432 567 890",
+    "Thanks, no rush, just when she gets a moment"
+  ],
+  "mock_tool_responses": [
+    {
+      "tool_name": "create_lead",
+      "response": {
+        "lead_id": "mock_lead_002",
+        "status": "created"
+      }
+    }
+  ],
+  "ground_truth": {
+    "intent": "leave_message",
+    "slots": {
+      "customer_name": "Rachel White",
+      "customer_phone": "0432 567 890",
+      "notes": "invoice 1042 error"
+    },
+    "expected_tools": ["create_lead"],
+    "expected_outcome": "message_taken",
+    "policy_expectations": [
+      "Must read back the message summary to confirm accuracy",
+      "Must not make commitments on Jane's behalf"
+    ],
+    "forbidden_actions": []
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false
+  },
+  "tenant_config": {
+    "business_name": "ABC Accounting",
+    "vertical": "smb_general",
+    "phone": "+61 2 5555 1234",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "09:00", "close": "17:30"},
+      "friday": {"open": "09:00", "close": "17:00"},
+      "saturday": null,
+      "sunday": null
+    },
+    "services": [
+      {"id": "consultation", "name": "Consultation", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "hubspot": {"enabled": true, "pipeline_id": "default"}
+    }
+  },
+  "tags": ["leave_message", "smb_general", "happy_path"]
+}

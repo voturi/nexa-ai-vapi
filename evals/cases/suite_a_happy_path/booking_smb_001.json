@@ -1,0 +1,60 @@
+{
+  "case_id": "booking_smb_001",
+  "description": "Caller books a consultation with an accounting firm",
+  "business_domain": "smb_general",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I'd like to book a consultation with one of your accountants about setting up a new business",
+    "Thursday morning works well, maybe 10am? Name's David Chen, best number is 0401 222 333",
+    "That's great, I'll see you Thursday at 10"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "consultation",
+      "date": "Thursday",
+      "customer_name": "David Chen",
+      "customer_phone": "0401 222 333"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Must capture nature of consultation (new business setup)",
+      "Must confirm appointment time and date clearly"
+    ],
+    "forbidden_actions": []
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true
+  },
+  "tenant_config": {
+    "business_name": "ABC Accounting",
+    "vertical": "smb_general",
+    "phone": "+61 2 5555 1234",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "09:00", "close": "17:30"},
+      "tuesday": {"open": "09:00", "close": "17:30"},
+      "wednesday": {"open": "09:00", "close": "17:30"},
+      "thursday": {"open": "09:00", "close": "17:30"},
+      "friday": {"open": "09:00", "close": "17:00"},
+      "saturday": null,
+      "sunday": null
+    },
+    "services": [
+      {"id": "consultation", "name": "Initial Consultation", "duration_minutes": 60},
+      {"id": "tax_return", "name": "Tax Return", "duration_minutes": 90},
+      {"id": "bookkeeping", "name": "Bookkeeping Review", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["booking", "smb_general", "happy_path"]
+}

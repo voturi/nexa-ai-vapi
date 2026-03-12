@@ -1,0 +1,61 @@
+{
+  "case_id": "booking_tradies_001",
+  "description": "Caller books routine plumbing maintenance — standard happy path",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I need to book a plumber for some routine maintenance",
+    "Tomorrow after 10am works. My name's John Smith and my number is 0423 456 789. Please go ahead and book it",
+    "10am tomorrow is perfect, confirmed"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "routine_maintenance",
+      "date": "tomorrow",
+      "customer_name": "John Smith",
+      "customer_phone": "0423 456 789"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Must check availability before creating booking",
+      "Must confirm booking details with caller before finalising"
+    ],
+    "forbidden_actions": [
+      "Create booking without checking availability first"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["booking", "tradies", "happy_path", "tool_sequence"]
+}

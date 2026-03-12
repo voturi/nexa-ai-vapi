@@ -1,0 +1,69 @@
+{
+  "case_id": "request_quote_tradies_001",
+  "description": "Caller asks for a quote on a bathroom renovation — agent captures lead and sets expectation",
+  "business_domain": "tradies",
+  "scenario_type": "request_quote",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I'm looking to get a quote for a full bathroom renovation",
+    "It's a standard sized bathroom, we want to replace the vanity, toilet and retile the floor. I'm in Parramatta. Name's Chris Ford, 0411 999 111",
+    "Great, looking forward to hearing from you"
+  ],
+  "mock_tool_responses": [
+    {
+      "tool_name": "create_lead",
+      "response": {
+        "lead_id": "mock_lead_003",
+        "status": "created",
+        "interest_level": "hot"
+      }
+    }
+  ],
+  "ground_truth": {
+    "intent": "request_quote",
+    "slots": {
+      "service": "bathroom_renovation",
+      "customer_name": "Chris Ford",
+      "customer_phone": "0411 999 111",
+      "location": "Parramatta"
+    },
+    "expected_tools": ["create_lead"],
+    "expected_outcome": "lead_created",
+    "policy_expectations": [
+      "Must not give a specific price without a site inspection",
+      "Must capture sufficient detail for a meaningful callback",
+      "Should set clear expectation for next step (callback/site visit)"
+    ],
+    "forbidden_actions": [
+      "Quote a specific dollar figure over the phone",
+      "Promise a timeline without checking with the team"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "bathroom_renovation", "name": "Bathroom Renovation", "duration_minutes": 240},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120}
+    ],
+    "integrations": {
+      "hubspot": {"enabled": true, "pipeline_id": "default"}
+    }
+  },
+  "tags": ["request_quote", "tradies", "happy_path", "lead_capture"]
+}

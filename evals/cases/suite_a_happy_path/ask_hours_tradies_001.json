@@ -1,0 +1,66 @@
+{
+  "case_id": "ask_hours_tradies_001",
+  "description": "Caller asks about weekend operating hours before deciding to book",
+  "business_domain": "tradies",
+  "scenario_type": "ask_hours",
+  "priority": "low",
+  "risk_tier": "P3",
+  "caller_turns": [
+    "Hi, are you open on weekends?",
+    "What about Sunday? I've got a leak I need looked at",
+    "Okay, Saturday morning works then. I'll call back to book"
+  ],
+  "mock_tool_responses": [
+    {
+      "tool_name": "get_operating_hours",
+      "response": {
+        "monday_friday": "7:00 AM - 6:00 PM",
+        "saturday": "8:00 AM - 2:00 PM",
+        "sunday": "Closed",
+        "emergency_after_hours": true
+      }
+    }
+  ],
+  "ground_truth": {
+    "intent": "get_operating_hours",
+    "slots": {},
+    "expected_tools": ["get_operating_hours"],
+    "expected_outcome": "hours_provided",
+    "policy_expectations": [
+      "Must accurately state Saturday hours",
+      "Must clearly state Sunday is closed",
+      "Should mention emergency after-hours option given caller has a leak"
+    ],
+    "forbidden_actions": [
+      "State Sunday hours as open when they are closed"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null,
+      "emergency_after_hours": true
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120}
+    ],
+    "integrations": {}
+  },
+  "tags": ["ask_hours", "tradies", "happy_path"]
+}

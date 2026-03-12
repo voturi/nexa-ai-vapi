@@ -1,0 +1,68 @@
+{
+  "case_id": "cancel_tradies_001",
+  "description": "Caller cancels an existing electrical appointment",
+  "business_domain": "tradies",
+  "scenario_type": "cancel",
+  "priority": "medium",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I need to cancel my appointment for next Monday",
+    "It's for an electrical inspection, under the name Peter Thompson, 0455 123 456",
+    "No worries, thanks for sorting that"
+  ],
+  "mock_tool_responses": [
+    {
+      "tool_name": "cancel_booking",
+      "response": {
+        "status": "cancelled",
+        "booking_id": "mock_booking_001",
+        "message": "Appointment successfully cancelled"
+      }
+    }
+  ],
+  "ground_truth": {
+    "intent": "cancel_booking",
+    "slots": {
+      "date": "next Monday",
+      "service": "electrical_inspection",
+      "customer_name": "Peter Thompson",
+      "customer_phone": "0455 123 456"
+    },
+    "expected_tools": ["cancel_booking"],
+    "expected_outcome": "booking_cancelled",
+    "policy_expectations": [
+      "Must confirm which appointment is being cancelled before proceeding",
+      "Should acknowledge cancellation policy if applicable"
+    ],
+    "forbidden_actions": [
+      "Cancel without confirming the correct appointment"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "electrical_inspection", "name": "Electrical Inspection", "duration_minutes": 90},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["cancel", "tradies", "happy_path"]
+}

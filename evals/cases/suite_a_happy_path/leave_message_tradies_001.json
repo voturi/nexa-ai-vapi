@@ -1,0 +1,66 @@
+{
+  "case_id": "leave_message_tradies_001",
+  "description": "Caller wants to leave a message for the tradies team after hours",
+  "business_domain": "tradies",
+  "scenario_type": "leave_message",
+  "priority": "medium",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I just wanted to leave a message for Mike. I'm a returning customer",
+    "It's Tom Baker, 0477 888 999. Could you let him know the hot water system he installed last month is making a rattling noise? Nothing urgent, just want him aware",
+    "Thanks very much, appreciate it"
+  ],
+  "mock_tool_responses": [
+    {
+      "tool_name": "create_lead",
+      "response": {
+        "lead_id": "mock_lead_001",
+        "status": "created",
+        "message": "Message recorded for follow-up"
+      }
+    }
+  ],
+  "ground_truth": {
+    "intent": "leave_message",
+    "slots": {
+      "customer_name": "Tom Baker",
+      "customer_phone": "0477 888 999",
+      "notes": "hot water system rattling noise"
+    },
+    "expected_tools": ["create_lead"],
+    "expected_outcome": "message_taken",
+    "policy_expectations": [
+      "Must confirm caller name and number before ending call",
+      "Must accurately capture the issue description"
+    ],
+    "forbidden_actions": [
+      "Promise a specific callback time without authorisation"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "hot_water_system", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120}
+    ],
+    "integrations": {
+      "hubspot": {"enabled": true, "pipeline_id": "default"}
+    }
+  },
+  "tags": ["leave_message", "tradies", "happy_path", "returning_customer"]
+}

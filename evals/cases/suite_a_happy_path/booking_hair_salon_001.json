@@ -1,0 +1,60 @@
+{
+  "case_id": "booking_hair_salon_001",
+  "description": "Caller books a haircut appointment for next Friday afternoon",
+  "business_domain": "hair_salon",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hello, I'd like to book a haircut please",
+    "Next Friday afternoon would be great, around 2 or 3pm. I'm Sarah Johnson, 0412 345 678",
+    "3pm Friday is perfect, thank you!"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "haircut",
+      "date": "next Friday",
+      "customer_name": "Sarah Johnson",
+      "customer_phone": "0412 345 678"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Must offer specific time options from availability",
+      "Must confirm stylist or service details before booking"
+    ],
+    "forbidden_actions": []
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true
+  },
+  "tenant_config": {
+    "business_name": "Glamour Hair Salon",
+    "vertical": "hair_salon",
+    "phone": "+61 2 9876 5432",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "09:00", "close": "18:00"},
+      "tuesday": {"open": "09:00", "close": "18:00"},
+      "wednesday": {"open": "09:00", "close": "20:00"},
+      "thursday": {"open": "09:00", "close": "20:00"},
+      "friday": {"open": "09:00", "close": "18:00"},
+      "saturday": {"open": "09:00", "close": "16:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "haircut", "name": "Haircut", "duration_minutes": 45},
+      {"id": "colour", "name": "Full Colour", "duration_minutes": 120},
+      {"id": "blowdry", "name": "Blow Dry", "duration_minutes": 30}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["booking", "hair_salon", "happy_path"]
+}

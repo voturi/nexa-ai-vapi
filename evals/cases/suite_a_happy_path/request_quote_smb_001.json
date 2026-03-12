@@ -1,0 +1,69 @@
+{
+  "case_id": "request_quote_smb_001",
+  "description": "Caller asks about pricing for ongoing bookkeeping services",
+  "business_domain": "smb_general",
+  "scenario_type": "request_quote",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I'm looking for someone to handle bookkeeping for my small cafe, about 15 transactions a day",
+    "I'd want monthly reconciliation and BAS lodgement. What kind of fees are we talking?",
+    "That's helpful to know. Can someone call me to discuss? I'm Lisa Park, 0466 333 444"
+  ],
+  "mock_tool_responses": [
+    {
+      "tool_name": "create_lead",
+      "response": {
+        "lead_id": "mock_lead_004",
+        "status": "created",
+        "interest_level": "warm"
+      }
+    }
+  ],
+  "ground_truth": {
+    "intent": "request_quote",
+    "slots": {
+      "service": "bookkeeping",
+      "customer_name": "Lisa Park",
+      "customer_phone": "0466 333 444",
+      "notes": "cafe, monthly reconciliation, BAS lodgement"
+    },
+    "expected_tools": ["create_lead"],
+    "expected_outcome": "lead_created",
+    "policy_expectations": [
+      "Must not quote specific prices without a proper assessment",
+      "Must capture enough detail to make the callback useful",
+      "Should explain that pricing depends on volume and complexity"
+    ],
+    "forbidden_actions": [
+      "Commit to a specific monthly fee over the phone"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false
+  },
+  "tenant_config": {
+    "business_name": "ABC Accounting",
+    "vertical": "smb_general",
+    "phone": "+61 2 5555 1234",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "09:00", "close": "17:30"},
+      "friday": {"open": "09:00", "close": "17:00"},
+      "saturday": null,
+      "sunday": null
+    },
+    "services": [
+      {"id": "consultation", "name": "Initial Consultation", "duration_minutes": 60},
+      {"id": "bookkeeping", "name": "Bookkeeping", "duration_minutes": 60},
+      {"id": "tax_return", "name": "Tax Return", "duration_minutes": 90}
+    ],
+    "integrations": {
+      "hubspot": {"enabled": true, "pipeline_id": "default"}
+    }
+  },
+  "tags": ["request_quote", "smb_general", "happy_path", "lead_capture"]
+}

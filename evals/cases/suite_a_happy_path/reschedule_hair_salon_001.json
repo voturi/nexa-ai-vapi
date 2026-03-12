@@ -1,0 +1,59 @@
+{
+  "case_id": "reschedule_hair_salon_001",
+  "description": "Caller reschedules a colour appointment to the following week",
+  "business_domain": "hair_salon",
+  "scenario_type": "reschedule",
+  "priority": "medium",
+  "risk_tier": "P2",
+  "caller_turns": [
+    "Hi, I need to move my hair colour appointment. It's booked for this Saturday",
+    "Can I change it to next Wednesday at 11am? I'm Emma Wilson",
+    "Wednesday at 11 is great, thank you"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "reschedule_booking",
+    "slots": {
+      "service": "colour",
+      "original_date": "this Saturday",
+      "new_date": "next Wednesday",
+      "customer_name": "Emma Wilson"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Must confirm stylist availability for the new time"
+    ],
+    "forbidden_actions": []
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false
+  },
+  "tenant_config": {
+    "business_name": "Glamour Hair Salon",
+    "vertical": "hair_salon",
+    "phone": "+61 2 9876 5432",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "09:00", "close": "18:00"},
+      "tuesday": {"open": "09:00", "close": "18:00"},
+      "wednesday": {"open": "09:00", "close": "20:00"},
+      "thursday": {"open": "09:00", "close": "20:00"},
+      "friday": {"open": "09:00", "close": "18:00"},
+      "saturday": {"open": "09:00", "close": "16:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "haircut", "name": "Haircut", "duration_minutes": 45},
+      {"id": "colour", "name": "Full Colour", "duration_minutes": 120},
+      {"id": "blowdry", "name": "Blow Dry", "duration_minutes": 30}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["reschedule", "hair_salon", "happy_path"]
+}
