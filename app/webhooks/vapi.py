@@ -304,10 +304,23 @@ async def handle_function_call(
             message_keys=list(message.keys()) if message else []
         )
 
+        # Handle end-of-call-report — VAPI sends this to serverUrl, not to /call-ended
+        if message_type == "end-of-call-report":
+            try:
+                call_service = CallService(db)
+                call = await call_service.handle_call_ended(data)
+                logger.info(
+                    "end_of_call_report_saved",
+                    call_id=str(call.id) if call else None,
+                    tenant_id=tenant_id,
+                )
+            except Exception as e:
+                logger.error("end_of_call_report_save_failed", error=str(e))
+            return {"status": "acknowledged"}
+
         # VAPI sends MANY webhook types to serverUrl
         # We ONLY process "tool-calls" type messages
         if message_type != "tool-calls":
-            # Not a tool call - just acknowledge and return
             logger.debug(
                 "webhook_serverurl_ignored",
                 message_type=message_type,
@@ -363,19 +376,18 @@ async def handle_call_ended(
     Triggered when call completes. Process transcript, save recording,
     update analytics.
     """
-    body = await request.body()
-    data = await request.json()
-
-    # Extract tenant_id from metadata
-    tenant_id = data.get("call", {}).get("metadata", {}).get("tenant_id")
-    if not tenant_id:
-        raise HTTPException(status_code=400, detail="Missing tenant_id in metadata")
-
-    # Process call ended event
-    call_service = CallService(db)
-    await call_service.handle_call_ended(data)
-
-    return {"status": "processed"}
+    try:
+        data = await request.json()
+        call_service = CallService(db)
+        call = await call_service.handle_call_ended(data)
+        logger.info(
+            "webhook_call_ended_processed",
+            call_id=str(call.id) if call else None,
+        )
+        return {"status": "processed"}
+    except Exception as e:
+        logger.error("webhook_call_ended_error", error=str(e))
+        return {"status": "error", "detail": str(e)}
 
 
 @router.post("/call-status")

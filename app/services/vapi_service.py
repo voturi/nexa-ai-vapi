@@ -8,6 +8,9 @@ import structlog
 
 from app.models.tenant import Tenant
 from app.services.skills_engine import skills_engine
+from app.services.booking_service import BookingService
+from app.services.lead_service import LeadService
+from app.services.call_service import CallService
 
 logger = structlog.get_logger()
 
@@ -312,6 +315,24 @@ class VAPIService:
             tools_count=len(response["assistant"]["model"]["tools"])
         )
 
+        # Create call record in DB (best-effort — don't fail the response)
+        vapi_call_id = data.get("message", {}).get("call", {}).get("id")
+        if vapi_call_id:
+            try:
+                call_service = CallService(self.db)
+                caller_phone = (
+                    data.get("message", {})
+                    .get("call", {})
+                    .get("customer", {}) or {}
+                ).get("number")
+                await call_service.create_from_call_started(
+                    tenant_id=str(tenant.id),
+                    vapi_call_id=vapi_call_id,
+                    caller_phone=caller_phone,
+                )
+            except Exception as e:
+                logger.warning("call_record_creation_failed", error=str(e))
+
         return response
 
     async def handle_function_call(self, data: dict, tenant_id: str) -> Dict[str, Any]:
@@ -509,61 +530,37 @@ class VAPIService:
         self,
         tenant: Tenant,
         parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Handle create_booking tool call."""
-        # TODO: Implement actual booking creation
-        from datetime import datetime
+    ) -> str:
+        """Handle create_booking tool call — saves to Supabase."""
+        logger.info("create_booking", tenant_id=str(tenant.id), parameters=parameters)
 
-        logger.info(
-            "create_booking",
-            tenant_id=str(tenant.id),
-            parameters=parameters
+        booking_service = BookingService(self.db)
+        booking = await booking_service.create_from_tool_call(tenant, parameters)
+
+        formatted_time = booking.scheduled_at.strftime("%A, %B %d, %Y at %I:%M %p")
+        return (
+            f"Perfect! I've confirmed your booking for {formatted_time}. "
+            f"Your booking reference is {str(booking.id)[:8]}. "
+            f"We'll send you a confirmation SMS shortly."
         )
-
-        # Extract booking details
-        customer_name = parameters.get("customer_name", "Customer")
-        customer_phone = parameters.get("customer_phone", "")
-        service_id = parameters.get("service_id", "")
-        scheduled_datetime = parameters.get("scheduled_datetime", "")
-        notes = parameters.get("notes", "")
-
-        # Parse and format the scheduled time
-        try:
-            if scheduled_datetime:
-                dt = datetime.fromisoformat(scheduled_datetime.replace('Z', '+00:00'))
-                # If year is wrong, fix it to 2026
-                if dt.year < 2026:
-                    dt = dt.replace(year=2026)
-                formatted_time = dt.strftime("%A, %B %d, %Y at %I:%M %p")
-            else:
-                formatted_time = "scheduled time"
-        except:
-            formatted_time = "scheduled time"
-
-        booking_id = f"booking_{uuid.uuid4().hex[:8]}"
-
-        # Return a simple string response
-        return f"Perfect! I've confirmed your booking for {formatted_time}. Your booking reference is {booking_id}. We'll send you a confirmation SMS shortly."
 
     async def _handle_create_lead(
         self,
         tenant: Tenant,
         parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Handle create_lead tool call."""
-        # TODO: Implement lead creation and CRM sync
-        logger.info(
-            "create_lead",
-            tenant_id=str(tenant.id),
-            parameters=parameters
-        )
+    ) -> str:
+        """Handle create_lead tool call — saves to Supabase."""
+        logger.info("create_lead", tenant_id=str(tenant.id), parameters=parameters)
+
+        lead_service = LeadService(self.db)
+        lead = await lead_service.create_from_tool_call(tenant, parameters)
 
         customer_name = parameters.get("customer_name", "Customer")
         interest = parameters.get("interest", "")
-        lead_id = f"lead_{uuid.uuid4().hex[:8]}"
-
-        # Return a simple string response
-        return f"Thanks {customer_name}! I've captured your details and someone from our team will call you back within 24 hours to discuss your {interest or 'inquiry'}."
+        return (
+            f"Thanks {customer_name}! I've captured your details and someone from our team "
+            f"will call you back within 24 hours to discuss your {interest or 'inquiry'}."
+        )
 
     async def _handle_get_service_details(
         self,
