@@ -1,0 +1,63 @@
+{
+  "case_id": "phone_tradies_006",
+  "description": "Landline no spaces 0298765432 — agent must correctly split and store",
+  "business_domain": "tradies",
+  "scenario_type": "leave_message",
+  "priority": "medium",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "I'd like to leave a message to get a quote on some plumbing work",
+    "Name's Patricia Lee, you can reach me on 0298765432",
+    "That's a landline yes — please go ahead and record my details so someone can call me back in the morning"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "leave_message",
+    "slots": {
+      "customer_name": "Patricia Lee",
+      "customer_phone": "0298765432",
+      "notes": "quote request, prefers morning callback"
+    },
+    "critical_tokens": {
+      "customer_phone": "0298765432"
+    },
+    "expected_tools": ["create_lead"],
+    "expected_outcome": "message_taken",
+    "policy_expectations": ["Must capture name and callback number"],
+    "forbidden_actions": []
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["phone", "tradies", "landline", "no_spaces", "leave_message", "suite_b", "critical_precision"]
+}

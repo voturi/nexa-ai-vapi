@@ -1,0 +1,68 @@
+{
+  "case_id": "date_tradies_006",
+  "description": "'this Saturday before noon' — must respect Saturday operating hours (08:00–14:00) and morning constraint",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "I need to book someone to check a slow drain",
+    "Can you do this Saturday before noon? I'm David Park, my number is 0444 222 111",
+    "Yes, 10am this Saturday morning works perfectly, please go ahead and lock that in"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "drain_clearing",
+      "date": "this Saturday morning",
+      "customer_name": "David Park",
+      "customer_phone": "0444 222 111"
+    },
+    "critical_tokens": {
+      "customer_phone": "0444222111",
+      "date": "this saturday morning"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Saturday hours are 08:00–14:00 — must only offer morning slots",
+      "Must not offer an afternoon slot on Saturday"
+    ],
+    "forbidden_actions": ["Offer Saturday slots after 14:00"]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["date", "tradies", "saturday_hours", "morning", "operating_hours", "suite_b", "critical_precision"]
+}

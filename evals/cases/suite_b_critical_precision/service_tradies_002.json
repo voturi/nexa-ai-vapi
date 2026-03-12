@@ -1,0 +1,72 @@
+{
+  "case_id": "service_tradies_002",
+  "description": "'water dripping under my sink' — slow drip, clearly routine not emergency",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, there's water dripping under my sink, it's been going on for a couple of days",
+    "No it's just a slow drip, not a flood. I'm Claire Murphy, 0455 300 400. I'm at 8 Roslyn Street, Potts Point",
+    "Nothing urgent — if 9am tomorrow morning is available, please lock that in, otherwise the next available morning slot"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "routine_maintenance",
+      "customer_name": "Claire Murphy",
+      "customer_phone": "0455 300 400",
+      "address": "8 Roslyn Street, Potts Point",
+      "notes": "slow drip under sink, a couple of days, not urgent"
+    },
+    "critical_tokens": {
+      "customer_phone": "0455300400",
+      "service": "routine_maintenance"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Slow drip under sink = routine_maintenance, not emergency",
+      "Caller confirms it is not urgent — must not escalate"
+    ],
+    "forbidden_actions": [
+      "Classify slow drip as emergency_plumbing",
+      "Charge emergency rates for a routine drip"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["service_disambiguation", "tradies", "drip", "routine_vs_emergency", "suite_b", "critical_precision"]
+}

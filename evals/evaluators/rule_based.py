@@ -15,6 +15,7 @@ Dimension scores (0–3):
 """
 from __future__ import annotations
 
+import re
 from typing import Optional
 
 from evals.schema.case import (
@@ -48,6 +49,130 @@ _OUTCOME_ALIASES: dict[str, list[str]] = {
     "quote_provided": ["quote_provided", "request_quote", "lead_created"],
 }
 
+
+# ---------------------------------------------------------------------------
+# CriticalTokenEvaluator — Phase 2
+# ---------------------------------------------------------------------------
+
+class CriticalTokenEvaluator:
+    """
+    Fuzzy-normalised match for critical data fields captured during a call.
+
+    Value: loose containment matching (Phase 1) silently passes cases where
+    "0423456789" ≠ "0423 456 789". This class normalises both sides before
+    comparing, catching all formatting variants while still flagging genuinely
+    wrong values.
+
+    Token type routing:
+      - phone   → strip non-digits, normalise +614xx → 04xx; require exact match
+      - email   → lowercase, strip spaces; require exact match
+      - date    → lowercase, strip punctuation; rapidfuzz WRatio ≥ 70
+      - address → lowercase, strip punctuation; rapidfuzz WRatio ≥ 75
+      - suburb  → lowercase, strip punctuation; rapidfuzz WRatio ≥ 80
+      - default → rapidfuzz WRatio ≥ 80
+    """
+
+    _SIMILARITY_THRESHOLDS: dict[str, int] = {
+        "phone": 100,    # must be exact after digit-stripping
+        "email": 100,    # must be exact after lowercase/strip
+        "date": 70,      # AU slang date expressions need flexibility
+        "address": 75,
+        "suburb": 80,
+        "default": 80,
+    }
+
+    def evaluate_critical_tokens(
+        self,
+        critical_tokens: dict[str, str],
+        extracted_slots: dict[str, str],
+    ) -> tuple[bool, list[str]]:
+        """
+        Check each critical token against the extracted slot values.
+
+        Returns (all_passed, list_of_failure_messages).
+        A missing slot is always a failure — the agent must capture it.
+        """
+        failures: list[str] = []
+
+        for key, expected in critical_tokens.items():
+            actual = extracted_slots.get(key)
+            token_type = self._classify(key)
+
+            if actual is None:
+                failures.append(
+                    f"Critical token '{key}' not captured "
+                    f"(expected: '{expected}')"
+                )
+                continue
+
+            norm_exp = self._normalise(expected, token_type)
+            norm_act = self._normalise(actual, token_type)
+            threshold = self._SIMILARITY_THRESHOLDS.get(
+                token_type, self._SIMILARITY_THRESHOLDS["default"]
+            )
+
+            if token_type in ("phone", "email"):
+                # Exact match after normalisation — no fuzziness for identifiers
+                if norm_exp != norm_act:
+                    failures.append(
+                        f"Critical token '{key}' mismatch — "
+                        f"expected '{expected}' → '{norm_exp}', "
+                        f"got '{actual}' → '{norm_act}'"
+                    )
+            else:
+                try:
+                    from rapidfuzz import fuzz
+                    score = fuzz.WRatio(norm_exp, norm_act)
+                except ImportError:
+                    # rapidfuzz not installed — fall back to exact match
+                    score = 100 if norm_exp == norm_act else 0
+
+                if score < threshold:
+                    failures.append(
+                        f"Critical token '{key}' fuzzy mismatch "
+                        f"(score {score:.0f} < {threshold}) — "
+                        f"expected '{expected}', got '{actual}'"
+                    )
+
+        return len(failures) == 0, failures
+
+    # ── Normalisation helpers ────────────────────────────────────────────────
+
+    def _classify(self, key: str) -> str:
+        k = key.lower()
+        if any(w in k for w in ("phone", "mobile", "number", "contact")):
+            return "phone"
+        if "email" in k:
+            return "email"
+        if any(w in k for w in ("date", "time", "datetime", "when", "arvo")):
+            return "date"
+        if any(w in k for w in ("suburb", "city", "town")):
+            return "suburb"
+        if any(w in k for w in ("address", "street", "location")):
+            return "address"
+        return "default"
+
+    def _normalise(self, value: str, token_type: str) -> str:
+        value = value.strip().lower()
+        if token_type == "phone":
+            digits = re.sub(r"\D", "", value)
+            # +61 4xx xxx xxx  →  04xx xxx xxx (11 digits starting with 614)
+            if digits.startswith("614") and len(digits) == 11:
+                digits = "0" + digits[2:]
+            # +61 2 xxxx xxxx  →  02 xxxx xxxx (10 digits starting with 61)
+            elif digits.startswith("61") and len(digits) == 10:
+                digits = "0" + digits[2:]
+            return digits
+        if token_type == "email":
+            return re.sub(r"\s+", "", value)
+        # For dates, addresses, suburbs: lowercase + strip punctuation + collapse whitespace
+        cleaned = re.sub(r"[^\w\s]", " ", value)
+        return re.sub(r"\s+", " ", cleaned).strip()
+
+
+# ---------------------------------------------------------------------------
+# RuleBasedEvaluator — Phase 1 + 2
+# ---------------------------------------------------------------------------
 
 class RuleBasedEvaluator:
     """
@@ -111,6 +236,20 @@ class RuleBasedEvaluator:
                 f"got {trace.tools_called}"
             )
 
+        # Gate: critical token precision (Phase 2 — phone, email, date, address)
+        # Enabled per-case via must_match_critical_tokens + critical_tokens in ground_truth.
+        if case.ground_truth.critical_tokens and case.success_criteria.must_match_critical_tokens:
+            ct_evaluator = CriticalTokenEvaluator()
+            ct_ok, ct_failures = ct_evaluator.evaluate_critical_tokens(
+                case.ground_truth.critical_tokens,
+                trace.extracted_slots,
+            )
+            hard_gate_results["critical_tokens_matched"] = ct_ok
+            if not ct_ok:
+                errors.extend(ct_failures)
+        else:
+            hard_gate_results["critical_tokens_matched"] = True
+
         # ── Dimension Scores (0–3) ────────────────────────────────────────
 
         intent_score = self._score_intent(case, trace)
@@ -132,6 +271,7 @@ class RuleBasedEvaluator:
             "no_hallucinated_slots": case.success_criteria.must_not_hallucinate_slots,
             "task_completed": case.success_criteria.must_complete_task,
             "tools_correct": case.success_criteria.must_call_expected_tools,
+            "critical_tokens_matched": case.success_criteria.must_match_critical_tokens,
         }
         passed = all(
             hard_gate_results[gate]

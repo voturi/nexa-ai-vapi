@@ -1,0 +1,73 @@
+{
+  "case_id": "service_tradies_010",
+  "description": "'not sure what it is, something at my investment property' — vague, agent must ask clarifying questions before assigning service",
+  "business_domain": "tradies",
+  "scenario_type": "leave_message",
+  "priority": "medium",
+  "risk_tier": "P2",
+  "caller_turns": [
+    "Hi, I've got an investment property and there's apparently something wrong with the plumbing but I'm not sure what",
+    "The tenant rang me and said there's an issue but couldn't tell me exactly what — it's at 88 Pyrmont Bridge Road, Pyrmont. I'm Ivan Petrov, 0466 800 900",
+    "I can't get down there today — can someone call me back after they've had a look or can I just leave my details for now?"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "leave_message",
+    "slots": {
+      "customer_name": "Ivan Petrov",
+      "customer_phone": "0466 800 900",
+      "address": "88 Pyrmont Bridge Road, Pyrmont",
+      "notes": "investment property plumbing issue — nature unknown, tenant reported problem, owner requesting callback"
+    },
+    "critical_tokens": {
+      "customer_phone": "0466800900",
+      "address": "88 pyrmont bridge road pyrmont"
+    },
+    "expected_tools": ["create_lead"],
+    "expected_outcome": "message_taken",
+    "policy_expectations": [
+      "When service type cannot be determined, agent must capture details as a lead for callback",
+      "Agent should not guess or assign an incorrect service type",
+      "Must capture job address (investment property) and owner's contact details"
+    ],
+    "forbidden_actions": [
+      "Assign a specific service type without clarification from caller",
+      "Fail to capture address of the job site",
+      "Book an appointment without knowing what the job entails"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["service_disambiguation", "tradies", "vague_request", "investment_property", "leave_message", "suite_b", "critical_precision"]
+}

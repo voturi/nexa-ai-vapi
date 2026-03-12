@@ -1,0 +1,65 @@
+{
+  "case_id": "date_tradies_004",
+  "description": "'arvo this Thursday' — arvo slang combined with a specific day this week",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I need drain clearing, there's a bit of a blockage",
+    "Arvo this Thursday would be good. I'm Lucy Walsh, my number's 0455 777 888",
+    "Yes, 2pm this Thursday afternoon works perfectly, please go ahead and lock that in"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "drain_clearing",
+      "date": "this Thursday afternoon",
+      "customer_name": "Lucy Walsh",
+      "customer_phone": "0455 777 888"
+    },
+    "critical_tokens": {
+      "customer_phone": "0455777888",
+      "date": "this thursday afternoon"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": ["Must interpret 'arvo' as afternoon and 'this Thursday' as within current week"],
+    "forbidden_actions": ["Book for next Thursday when caller said this Thursday"]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["date", "tradies", "au_slang", "arvo", "this_week", "suite_b", "critical_precision"]
+}

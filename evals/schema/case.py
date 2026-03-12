@@ -51,6 +51,12 @@ class GroundTruth(BaseModel):
     forbidden_actions: list[str] = []
     """Things the agent must NOT do, e.g. 'promise same-day service without checking'."""
 
+    critical_tokens: dict[str, str] = {}
+    """Slot values that require exact fuzzy-normalised match (Phase 2).
+    Keys mirror slot names; values are the canonical expected form.
+    Any mismatch triggers a P1 hard gate failure when must_match_critical_tokens is True.
+    Examples: {'customer_phone': '0423456789', 'customer_email': 'john.smith@gmail.com'}"""
+
 
 # ---------------------------------------------------------------------------
 # Success criteria (hard gates)
@@ -69,6 +75,10 @@ class SuccessCriteria(BaseModel):
     must_not_hallucinate_slots: bool = True
     must_complete_task: bool = True
     must_call_expected_tools: bool = False
+
+    must_match_critical_tokens: bool = False
+    """Phase 2 gate: any critical token mismatch (phone, email, date, address) is a hard fail.
+    Enable per-case for Suite B and all Suite B-derived cases."""
 
     # Per-case named gates (e.g. {"must_not_book_without_availability_check": True})
     custom_gates: dict[str, bool] = {}

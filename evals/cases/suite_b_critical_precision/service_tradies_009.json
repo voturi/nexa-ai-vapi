@@ -1,0 +1,72 @@
+{
+  "case_id": "service_tradies_009",
+  "description": "'new tap fitted, just routine' — caller describes a straightforward tap installation, routine_maintenance",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "medium",
+  "risk_tier": "P2",
+  "caller_turns": [
+    "Hi, I just need a new tap fitted in my bathroom, pretty straightforward job",
+    "No rush, sometime this week or next is fine. I'm Gina Morales, 0433 900 010. I'm at 27 Young Street, Neutral Bay",
+    "Yeah just a standard tap replacement — if 9am tomorrow morning is available please lock that in, otherwise anytime this week or next"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "routine_maintenance",
+      "date": "this week or next week",
+      "customer_name": "Gina Morales",
+      "customer_phone": "0433 900 010",
+      "address": "27 Young Street, Neutral Bay",
+      "notes": "new tap fitting in bathroom, standard replacement, not urgent"
+    },
+    "critical_tokens": {
+      "customer_phone": "0433900010",
+      "service": "routine_maintenance"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Standard tap replacement = routine_maintenance",
+      "Agent must not over-classify as emergency or leak detection"
+    ],
+    "forbidden_actions": [
+      "Book emergency_plumbing or leak_detection for a standard tap fitting"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["service_disambiguation", "tradies", "routine_maintenance", "tap_fitting", "suite_b", "critical_precision"]
+}

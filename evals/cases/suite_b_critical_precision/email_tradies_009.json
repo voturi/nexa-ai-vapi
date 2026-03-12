@@ -1,0 +1,66 @@
+{
+  "case_id": "email_tradies_009",
+  "description": "iCloud email 'tom dot brown at icloud dot com' — short and clean, must get domain right",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "medium",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I need to book a leak detection at my house",
+    "Next Tuesday morning please. I'm Tom Brown, 0433 456 789. Email is tom dot brown at icloud dot com",
+    "Yes tom.brown at icloud dot com, that's correct — please lock in 9am next Tuesday morning"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "leak_detection",
+      "date": "next Tuesday morning",
+      "customer_name": "Tom Brown",
+      "customer_phone": "0433 456 789",
+      "customer_email": "tom.brown@icloud.com"
+    },
+    "critical_tokens": {
+      "customer_phone": "0433456789",
+      "customer_email": "tom.brown@icloud.com"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": ["Must store icloud.com not icloud.com.au"],
+    "forbidden_actions": ["Add .au to icloud domain"]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["email", "tradies", "icloud", "booking", "suite_b", "critical_precision"]
+}

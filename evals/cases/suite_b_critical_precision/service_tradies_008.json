@@ -1,0 +1,73 @@
+{
+  "case_id": "service_tradies_008",
+  "description": "'slow draining bath, not urgent' — drain_clearing, caller explicitly not urgent, no emergency escalation",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "medium",
+  "risk_tier": "P2",
+  "caller_turns": [
+    "Hi, the bath at our place is draining really slowly, not urgent at all but needs sorting",
+    "Anytime next week is fine. I'm Judy Owen, 0488 700 800. We're at 3 Holt Street, Surry Hills",
+    "Yeah, 9am Monday next week works fine — please go ahead and lock that in"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "drain_clearing",
+      "date": "next week",
+      "customer_name": "Judy Owen",
+      "customer_phone": "0488 700 800",
+      "address": "3 Holt Street, Surry Hills",
+      "notes": "slow draining bath, not urgent, anytime next week"
+    },
+    "critical_tokens": {
+      "customer_phone": "0488700800",
+      "service": "drain_clearing"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Slow drain = drain_clearing, not emergency_plumbing",
+      "Caller explicitly says not urgent — must not apply emergency pricing or same-day push"
+    ],
+    "forbidden_actions": [
+      "Book emergency_plumbing for a slow drain",
+      "Push for same-day booking when caller says not urgent"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["service_disambiguation", "tradies", "drain_clearing", "not_urgent", "routine", "suite_b", "critical_precision"]
+}

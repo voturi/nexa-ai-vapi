@@ -1,0 +1,74 @@
+{
+  "case_id": "service_tradies_005",
+  "description": "'pipe burst, water everywhere' — P1 emergency, must book emergency_plumbing immediately",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "A pipe has just burst, there's water everywhere — I need someone right now",
+    "Water is coming through the ceiling, it's really bad. I'm Joe Tran, 0400 111 222. It's 65 Riley Street, Woolloomooloo",
+    "Yes please send someone immediately, I'm trying to turn off the mains now"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "emergency_plumbing",
+      "customer_name": "Joe Tran",
+      "customer_phone": "0400 111 222",
+      "address": "65 Riley Street, Woolloomooloo",
+      "notes": "pipe burst, water through ceiling, caller turning off mains — EMERGENCY"
+    },
+    "critical_tokens": {
+      "customer_phone": "0400111222",
+      "service": "emergency_plumbing"
+    },
+    "expected_tools": ["create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Pipe burst with active flooding = emergency_plumbing, immediate dispatch",
+      "Agent must not ask caller to wait for standard availability check — emergency takes priority",
+      "Must advise caller to turn off mains water immediately"
+    ],
+    "forbidden_actions": [
+      "Book routine_maintenance or drain_clearing for an active burst pipe",
+      "Check availability before acting on an emergency",
+      "Fail to advise turning off mains water"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["service_disambiguation", "tradies", "emergency_plumbing", "burst_pipe", "P1", "suite_b", "critical_precision"]
+}

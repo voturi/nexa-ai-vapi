@@ -1,0 +1,65 @@
+{
+  "case_id": "email_tradies_002",
+  "description": "Caller spells email letter by letter — 'm-i-k-e at tradieproau dot com'",
+  "business_domain": "tradies",
+  "scenario_type": "request_quote",
+  "priority": "medium",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "I'd like to get a quote for some drain work and possibly a hot water replacement",
+    "I'm Mike Brennan, 0434 567 890. Email, I'll spell it — m-i-k-e at tradieproau dot com",
+    "That's mike at tradieproau dot com, yes — please log my details so someone can call me back about the quote"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "request_quote",
+    "slots": {
+      "customer_name": "Mike Brennan",
+      "customer_phone": "0434 567 890",
+      "customer_email": "mike@tradieproau.com",
+      "notes": "drain work and possible hot water replacement quote"
+    },
+    "critical_tokens": {
+      "customer_phone": "0434567890",
+      "customer_email": "mike@tradieproau.com"
+    },
+    "expected_tools": ["create_lead"],
+    "expected_outcome": "lead_created",
+    "policy_expectations": ["Must assemble spelled-out email into valid address format"],
+    "forbidden_actions": ["Store spelled letters individually"]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["email", "tradies", "spelled_email", "letter_by_letter", "quote", "suite_b", "critical_precision"]
+}
