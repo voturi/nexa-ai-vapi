@@ -460,14 +460,50 @@ class VAPIService:
                 }]
             }
 
+    async def _get_calendar_client(self, tenant: Tenant):
+        """
+        Get a GoogleCalendarClient for the tenant if calendar is connected.
+
+        Returns (client, calendar_id) tuple, or (None, None) if not connected.
+        """
+        from app.services.integration_service import IntegrationService
+        from app.integrations.google_calendar_client import GoogleCalendarClient
+
+        integration_service = IntegrationService(self.db)
+        creds = await integration_service.get_credentials(
+            tenant_id=tenant.id,
+            integration_type="google_calendar",
+        )
+
+        if not creds:
+            return None, None
+
+        integration = await integration_service.get_integration(
+            tenant_id=tenant.id,
+            integration_type="google_calendar",
+        )
+        calendar_id = (integration.config or {}).get("calendar_id", "primary")
+
+        client = GoogleCalendarClient(creds)
+        return client, calendar_id
+
+    async def _persist_refreshed_token(self, tenant: Tenant, client) -> None:
+        """If the Google token was refreshed, persist the new credentials."""
+        if client.token_refreshed:
+            from app.services.integration_service import IntegrationService
+            integration_service = IntegrationService(self.db)
+            await integration_service.update_credentials(
+                tenant_id=tenant.id,
+                integration_type="google_calendar",
+                credentials_data=client.get_refreshed_credentials(),
+            )
+
     async def _handle_check_availability(
         self,
         tenant: Tenant,
         parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> str:
         """Handle check_availability tool call."""
-        # TODO: Implement calendar integration
-        # For now, return mock data with realistic dates
         from datetime import datetime, timedelta
 
         service_id = parameters.get("service_id")
@@ -477,70 +513,149 @@ class VAPIService:
             "check_availability",
             tenant_id=str(tenant.id),
             service_id=service_id,
-            preferred_date=preferred_date
+            preferred_date=preferred_date,
         )
 
-        # Parse the requested date or use tomorrow as default
+        # Resolve service duration from tenant config
+        duration_minutes = 60
+        services = tenant.services or []
+        for svc in services:
+            if svc.get("id") == service_id:
+                duration_minutes = svc.get("duration_minutes", 60)
+                break
+
+        # Parse the requested date or default to tomorrow
         try:
             if preferred_date:
-                # Try to parse the date
                 request_date = datetime.strptime(preferred_date, "%Y-%m-%d")
-                # If the date is in the past or before 2026, use current date + 1
-                if request_date.year < 2026 or request_date < datetime.now():
+                if request_date < datetime.now():
                     base_date = datetime.now() + timedelta(days=1)
                 else:
                     base_date = request_date
             else:
-                # Default to tomorrow
                 base_date = datetime.now() + timedelta(days=1)
-        except:
-            # If parsing fails, use tomorrow
+        except Exception:
             base_date = datetime.now() + timedelta(days=1)
 
-        # Generate realistic time slots for the requested date
+        date_str = base_date.strftime("%Y-%m-%d")
+
+        # Try real Google Calendar first
+        client, calendar_id = await self._get_calendar_client(tenant)
+
+        if client and calendar_id:
+            try:
+                # Derive business hours from tenant config
+                operating_hours = tenant.operating_hours or {}
+                day_name = base_date.strftime("%A").lower()
+                day_hours = operating_hours.get(day_name, {"start": "09:00", "end": "17:00"})
+
+                result = await client.check_availability(
+                    calendar_id=calendar_id,
+                    date=date_str,
+                    duration_minutes=duration_minutes,
+                    business_hours=day_hours,
+                )
+                await self._persist_refreshed_token(tenant, client)
+
+                slots = result.get("available_slots", [])
+                date_formatted = result.get("date_formatted", date_str)
+
+                if not slots:
+                    return f"Sorry, there are no available appointments on {date_formatted}. Would you like to check another date?"
+
+                time_list = ", ".join(s["slot"] for s in slots)
+                return (
+                    f"We have {len(slots)} available appointments on {date_formatted}. "
+                    f"The available times are: {time_list}. Which time works best for you?"
+                )
+
+            except Exception as e:
+                logger.warning(
+                    "calendar_availability_fallback",
+                    tenant_id=str(tenant.id),
+                    error=str(e),
+                )
+                # Fall through to mock slots
+
+        # Fallback: return generic business-hours slots when no calendar connected
+        date_formatted = base_date.strftime("%A, %B %d, %Y")
         available_slots = [
-            {
-                "datetime": f"{base_date.strftime('%Y-%m-%d')}T09:00:00",
-                "available": True,
-                "slot": "9:00 AM"
-            },
-            {
-                "datetime": f"{base_date.strftime('%Y-%m-%d')}T11:00:00",
-                "available": True,
-                "slot": "11:00 AM"
-            },
-            {
-                "datetime": f"{base_date.strftime('%Y-%m-%d')}T14:00:00",
-                "available": True,
-                "slot": "2:00 PM"
-            },
-            {
-                "datetime": f"{base_date.strftime('%Y-%m-%d')}T16:00:00",
-                "available": True,
-                "slot": "4:00 PM"
-            },
+            {"slot": "9:00 AM"},
+            {"slot": "11:00 AM"},
+            {"slot": "2:00 PM"},
+            {"slot": "4:00 PM"},
         ]
-
-        # Format the date very clearly
-        date_formatted = base_date.strftime('%A, %B %d, %Y')
-
-        # Create time list for speaking
-        time_list = ', '.join([slot['slot'] for slot in available_slots])
-
-        # Return a simple string that the AI can directly speak
-        # This is the format that works best with VAPI
-        return f"We have {len(available_slots)} available appointments on {date_formatted}. The available times are: {time_list}. Which time works best for you?"
+        time_list = ", ".join(s["slot"] for s in available_slots)
+        return (
+            f"We have {len(available_slots)} available appointments on {date_formatted}. "
+            f"The available times are: {time_list}. Which time works best for you?"
+        )
 
     async def _handle_create_booking(
         self,
         tenant: Tenant,
         parameters: Dict[str, Any]
     ) -> str:
-        """Handle create_booking tool call — saves to Supabase."""
+        """Handle create_booking tool call — saves to Supabase and Google Calendar."""
         logger.info("create_booking", tenant_id=str(tenant.id), parameters=parameters)
 
         booking_service = BookingService(self.db)
         booking = await booking_service.create_from_tool_call(tenant, parameters)
+
+        # Try to create a Google Calendar event
+        calendar_event_id = None
+        client, calendar_id = await self._get_calendar_client(tenant)
+
+        if client and calendar_id:
+            try:
+                customer_name = parameters.get("customer_name", "Customer")
+                service_name = booking.service_name or parameters.get("service_id", "Appointment")
+                address = parameters.get("address", "")
+                notes = parameters.get("notes", "")
+
+                description_parts = [
+                    f"Customer: {customer_name}",
+                    f"Phone: {parameters.get('customer_phone', '')}",
+                ]
+                if parameters.get("customer_email"):
+                    description_parts.append(f"Email: {parameters['customer_email']}")
+                if address:
+                    description_parts.append(f"Address: {address}")
+                if notes:
+                    description_parts.append(f"Notes: {notes}")
+                description_parts.append(f"\nBooked via AI Receptionist (ref: {str(booking.id)[:8]})")
+
+                event_result = await client.create_event(
+                    calendar_id=calendar_id,
+                    summary=f"{service_name} - {customer_name}",
+                    start_datetime=booking.scheduled_at.isoformat(),
+                    duration_minutes=booking.duration_minutes,
+                    description="\n".join(description_parts),
+                    location=address or None,
+                    attendee_email=parameters.get("customer_email"),
+                    timezone=tenant.timezone or "Australia/Sydney",
+                )
+                calendar_event_id = event_result.get("event_id")
+                await self._persist_refreshed_token(tenant, client)
+
+                logger.info(
+                    "booking_calendar_event_created",
+                    booking_id=str(booking.id),
+                    event_id=calendar_event_id,
+                )
+            except Exception as e:
+                logger.warning(
+                    "calendar_event_creation_failed",
+                    booking_id=str(booking.id),
+                    error=str(e),
+                )
+
+        # Update booking with calendar event ID if we got one
+        if calendar_event_id:
+            await booking_service.update(
+                booking.id,
+                {"calendar_event_id": calendar_event_id},
+            )
 
         formatted_time = booking.scheduled_at.strftime("%A, %B %d, %Y at %I:%M %p")
         return (
