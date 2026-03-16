@@ -1,0 +1,65 @@
+{
+  "case_id": "email_tradies_003",
+  "description": "Underscore in email — 'j underscore smith at mybusiness dot com dot au' — agent must use _ not hyphen",
+  "business_domain": "tradies",
+  "scenario_type": "leave_message",
+  "priority": "medium",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I just want to leave my details and get a callback about some plumbing work",
+    "I'm Jackie Smith, 0422 888 999. Email is j underscore smith at mybusiness dot com dot au",
+    "That's right, underscore between j and smith — please go ahead and record my details so someone can call me back"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "leave_message",
+    "slots": {
+      "customer_name": "Jackie Smith",
+      "customer_phone": "0422 888 999",
+      "customer_email": "j_smith@mybusiness.com.au",
+      "notes": "plumbing work callback"
+    },
+    "critical_tokens": {
+      "customer_phone": "0422888999",
+      "customer_email": "j_smith@mybusiness.com.au"
+    },
+    "expected_tools": ["create_lead"],
+    "expected_outcome": "message_taken",
+    "policy_expectations": ["Must use underscore _ not hyphen - in email address"],
+    "forbidden_actions": ["Store 'j-smith' or 'j smith' instead of 'j_smith'"]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["email", "tradies", "underscore", "special_char", "leave_message", "suite_b", "critical_precision"]
+}

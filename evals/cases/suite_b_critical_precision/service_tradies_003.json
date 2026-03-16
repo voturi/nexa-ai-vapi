@@ -1,0 +1,72 @@
+{
+  "case_id": "service_tradies_003",
+  "description": "'hot water just stopped working completely' — failure of hot water system, emergency or hot_water service",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, our hot water system has just stopped working completely — no hot water at all",
+    "It went out this morning. I have a family so it's pretty urgent. I'm Greg Simmons, 0488 200 300, at 19 Devonshire Street, Surry Hills",
+    "Yes please, as soon as possible — if 9am today is available please lock that in, otherwise the earliest slot you have"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "hot_water",
+      "customer_name": "Greg Simmons",
+      "customer_phone": "0488 200 300",
+      "address": "19 Devonshire Street, Surry Hills",
+      "notes": "hot water system failed completely this morning, family household, urgent same-day request"
+    },
+    "critical_tokens": {
+      "customer_phone": "0488200300",
+      "service": "hot_water"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Total hot water failure = hot_water service, may be same-day urgent",
+      "Agent should treat as high priority and check earliest availability"
+    ],
+    "forbidden_actions": [
+      "Classify as routine_maintenance when caller says completely stopped",
+      "Dismiss urgency when caller mentions family household"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["service_disambiguation", "tradies", "hot_water", "urgent", "suite_b", "critical_precision"]
+}

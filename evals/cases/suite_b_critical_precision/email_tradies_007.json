@@ -1,0 +1,68 @@
+{
+  "case_id": "email_tradies_007",
+  "description": "Caller self-corrects email mid-sentence — agent must store corrected version only",
+  "business_domain": "tradies",
+  "scenario_type": "leave_message",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Just leaving my details for a callback on some plumbing work",
+    "I'm Sandra Carr, 0455 999 000. Email... hang on, it's sandra at hotmail... actually it's sandra dot c at hotmail dot com",
+    "Yes, sandra dot c at hotmail dot com — that's the right one — please go ahead and record my details so someone can call me back"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "leave_message",
+    "slots": {
+      "customer_name": "Sandra Carr",
+      "customer_phone": "0455 999 000",
+      "customer_email": "sandra.c@hotmail.com",
+      "notes": "plumbing work callback"
+    },
+    "critical_tokens": {
+      "customer_phone": "0455999000",
+      "customer_email": "sandra.c@hotmail.com"
+    },
+    "expected_tools": ["create_lead"],
+    "expected_outcome": "message_taken",
+    "policy_expectations": [
+      "Must store the corrected email (sandra.c@hotmail.com)",
+      "Must not store the first partial attempt (sandra@hotmail)"
+    ],
+    "forbidden_actions": ["Store 'sandra@hotmail.com' — the corrected address is 'sandra.c@hotmail.com'"]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["email", "tradies", "self_correction", "hotmail", "leave_message", "suite_b", "critical_precision"]
+}

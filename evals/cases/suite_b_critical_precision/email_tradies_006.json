@@ -1,0 +1,65 @@
+{
+  "case_id": "email_tradies_006",
+  "description": "Number in email username 'tomwright88 at gmail dot com' — agent must capture digits in username",
+  "business_domain": "tradies",
+  "scenario_type": "request_quote",
+  "priority": "medium",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Can I get a quote for a new hot water system?",
+    "I'm Tom Wright, 0477 111 222. Email is tomwright88 at gmail dot com",
+    "Yes tomwright — t-o-m-w-r-i-g-h-t — 88 at gmail dot com — please log my details so someone can call me back about the quote"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "request_quote",
+    "slots": {
+      "customer_name": "Tom Wright",
+      "customer_phone": "0477 111 222",
+      "customer_email": "tomwright88@gmail.com",
+      "notes": "hot water system replacement quote"
+    },
+    "critical_tokens": {
+      "customer_phone": "0477111222",
+      "customer_email": "tomwright88@gmail.com"
+    },
+    "expected_tools": ["create_lead"],
+    "expected_outcome": "lead_created",
+    "policy_expectations": ["Must capture digits 88 as part of email username, not drop them"],
+    "forbidden_actions": ["Store 'tomwright@gmail.com' without the number suffix"]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["email", "tradies", "number_in_username", "gmail", "quote", "suite_b", "critical_precision"]
+}

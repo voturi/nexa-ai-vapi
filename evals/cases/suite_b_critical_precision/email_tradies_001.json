@@ -1,0 +1,65 @@
+{
+  "case_id": "email_tradies_001",
+  "description": "'john dot smith at gmail dot com' — standard spoken email, dot/at substitutions",
+  "business_domain": "tradies",
+  "scenario_type": "request_quote",
+  "priority": "medium",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I'd like to get a quote for a bathroom renovation please",
+    "My name's John Smith, number is 0423 111 222. Email is john dot smith at gmail dot com",
+    "Yes that's right, please log my details so someone can call me back about the renovation quote"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "request_quote",
+    "slots": {
+      "customer_name": "John Smith",
+      "customer_phone": "0423 111 222",
+      "customer_email": "john.smith@gmail.com",
+      "notes": "bathroom renovation quote"
+    },
+    "critical_tokens": {
+      "customer_phone": "0423111222",
+      "customer_email": "john.smith@gmail.com"
+    },
+    "expected_tools": ["create_lead"],
+    "expected_outcome": "lead_created",
+    "policy_expectations": ["Must convert spoken dot/at to punctuation in email"],
+    "forbidden_actions": ["Store 'john dot smith at gmail dot com' literally"]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["email", "tradies", "spoken_email", "dot_at_substitution", "quote", "suite_b", "critical_precision"]
+}

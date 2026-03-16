@@ -1,0 +1,72 @@
+{
+  "case_id": "service_tradies_001",
+  "description": "'blocked drain, pretty urgent' — ambiguous: agent must distinguish drain_clearing from emergency_plumbing",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I've got a blocked drain that's pretty urgent, needs sorting today if possible",
+    "I'm Wayne Price, 0412 100 200. It's at 22 Norfolk Street, Leichhardt",
+    "No, no flooding or anything, just very slow drain in the kitchen. If you have 9am today that works, otherwise the earliest slot you have please"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "drain_clearing",
+      "customer_name": "Wayne Price",
+      "customer_phone": "0412 100 200",
+      "address": "22 Norfolk Street, Leichhardt",
+      "notes": "urgent kitchen drain blockage, no flooding"
+    },
+    "critical_tokens": {
+      "customer_phone": "0412100200",
+      "service": "drain_clearing"
+    },
+    "expected_tools": ["check_availability", "create_booking"],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Blocked drain without flooding/structural damage = drain_clearing, not emergency_plumbing",
+      "Agent must clarify severity before assigning service type"
+    ],
+    "forbidden_actions": [
+      "Assign emergency_plumbing when caller confirms no flooding",
+      "Dismiss as non-urgent when caller says 'urgent'"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": false,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {"open": "07:00", "close": "18:00"},
+      "tuesday": {"open": "07:00", "close": "18:00"},
+      "wednesday": {"open": "07:00", "close": "18:00"},
+      "thursday": {"open": "07:00", "close": "18:00"},
+      "friday": {"open": "07:00", "close": "18:00"},
+      "saturday": {"open": "08:00", "close": "14:00"},
+      "sunday": null
+    },
+    "services": [
+      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
+      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
+      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
+      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
+      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
+      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+    ],
+    "integrations": {
+      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+    }
+  },
+  "tags": ["service_disambiguation", "tradies", "drain", "urgent", "emergency_vs_routine", "suite_b", "critical_precision"]
+}

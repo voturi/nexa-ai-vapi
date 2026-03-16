@@ -10,6 +10,26 @@ from app.services.vapi_service import VAPIService
 from app.services.call_service import CallService
 from app.services.assistant_cache import assistant_cache
 
+# ── Langfuse observability (Phase 2) ─────────────────────────────────────────
+# Gracefully no-ops when LANGFUSE_SECRET_KEY / LANGFUSE_PUBLIC_KEY are not set.
+try:
+    from langfuse.decorators import observe, langfuse_context
+    _LANGFUSE_AVAILABLE = True
+except ImportError:
+    # langfuse not installed — define pass-through stubs so the rest of the
+    # module works without modification.
+    def observe(*args, **kwargs):  # type: ignore[misc]
+        def decorator(fn):
+            return fn
+        return decorator if args and callable(args[0]) else decorator
+
+    class _NoOpContext:
+        def update_current_trace(self, **kwargs): pass
+        def update_current_observation(self, **kwargs): pass
+
+    langfuse_context = _NoOpContext()  # type: ignore[assignment]
+    _LANGFUSE_AVAILABLE = False
+
 router = APIRouter()
 logger = structlog.get_logger()
 
@@ -158,6 +178,7 @@ async def debug_webhook(request: Request):
 
 
 @router.post("/call-started")
+@observe(name="vapi_call_started")
 async def handle_call_started(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -182,6 +203,18 @@ async def handle_call_started(
 
         # Extract tenant_id using helper function
         tenant_id = await extract_tenant_id(data, db)
+
+        # Tag this Langfuse trace with call-level metadata for dashboard slicing
+        langfuse_context.update_current_trace(
+            name="call_started",
+            user_id=tenant_id,
+            tags=["call", "vapi", "call_started"],
+            metadata={
+                "tenant_id": tenant_id,
+                "message_type": message_type,
+                "vertical": None,  # filled below after tenant config loads
+            },
+        )
 
         # Log the incoming webhook
         logger.info(
@@ -252,6 +285,15 @@ async def handle_call_started(
             # Cache it for next time
             assistant_cache.set(tenant_id, response_data)
 
+        # Emit structured observation so Langfuse captures the assistant config served
+        langfuse_context.update_current_observation(
+            output={
+                "has_assistant_override": "assistant" in response_data,
+                "response_keys": list(response_data.keys()),
+                "tenant_id": tenant_id,
+            }
+        )
+
         logger.info(
             "webhook_call_started_success",
             tenant_id=tenant_id,
@@ -274,6 +316,7 @@ async def handle_call_started(
 
 
 @router.post("/function-call")
+@observe(name="vapi_function_call")
 async def handle_function_call(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -294,6 +337,19 @@ async def handle_function_call(
 
         # Extract tenant_id using helper function
         tenant_id = await extract_tenant_id(data, db)
+
+        # Tag trace with tool-call context for per-function Langfuse visibility
+        function_name = message.get("functionCall", {}).get("name") or message.get("toolCallList", [{}])[0].get("function", {}).get("name")
+        langfuse_context.update_current_trace(
+            name="function_call",
+            user_id=tenant_id,
+            tags=["tool_call", "vapi", function_name or "unknown_tool"],
+            metadata={
+                "tenant_id": tenant_id,
+                "message_type": message_type,
+                "function_name": function_name,
+            },
+        )
 
         # Log the incoming webhook
         logger.info(
@@ -342,6 +398,12 @@ async def handle_function_call(
         vapi_service = VAPIService(db)
         result = await vapi_service.handle_function_call(data, tenant_id)
 
+        # Emit per-turn structured signal: function name + result summary
+        langfuse_context.update_current_observation(
+            input={"function_name": function_name, "tenant_id": tenant_id},
+            output={"result_type": type(result).__name__, "result_preview": str(result)[:200]},
+        )
+
         logger.info(
             "webhook_function_call_success",
             tenant_id=tenant_id,
@@ -366,6 +428,7 @@ async def handle_function_call(
 
 
 @router.post("/call-ended")
+@observe(name="vapi_call_ended")
 async def handle_call_ended(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -378,8 +441,35 @@ async def handle_call_ended(
     """
     try:
         data = await request.json()
+
+        # Extract structured signal from the end-of-call payload for Langfuse
+        message = data.get("message", {})
+        call_data = message.get("call", data.get("call", {}))
+        tenant_id = call_data.get("metadata", {}).get("tenant_id")
+        analysis = message.get("analysis", {})
+
+        langfuse_context.update_current_trace(
+            name="call_ended",
+            user_id=tenant_id,
+            tags=["call", "vapi", "call_ended"],
+            metadata={
+                "tenant_id": tenant_id,
+                "call_id": call_data.get("id"),
+                "duration_seconds": call_data.get("endedAt") and call_data.get("startedAt") and None,
+                "summary": analysis.get("summary", "")[:200],
+            },
+        )
+
         call_service = CallService(db)
         call = await call_service.handle_call_ended(data)
+
+        langfuse_context.update_current_observation(
+            output={
+                "call_id": str(call.id) if call else None,
+                "status": "processed",
+            }
+        )
+
         logger.info(
             "webhook_call_ended_processed",
             call_id=str(call.id) if call else None,

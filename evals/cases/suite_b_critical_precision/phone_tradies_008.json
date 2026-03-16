@@ -1,0 +1,124 @@
+{
+  "case_id": "phone_tradies_008",
+  "description": "Caller dictates number digit by digit \u2014 agent must concatenate correctly",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I'd like to book a drain clearing job",
+    "Friday arvo is good. Name's Gary Thompson. My number \u2014 zero, four, two, three, four, five, six, seven, eight, nine",
+    "Yes, 2pm Friday afternoon works perfectly, please go ahead and lock that in",
+    "The address is 21 Parramatta Road, Leichhardt"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "drain_clearing",
+      "date": "Friday afternoon",
+      "customer_name": "Gary Thompson",
+      "customer_phone": "0423456789",
+      "address": "21 Parramatta Road, Leichhardt"
+    },
+    "critical_tokens": {
+      "customer_phone": "0423456789",
+      "address": "21 parramatta road leichhardt"
+    },
+    "expected_tools": [
+      "check_availability",
+      "create_booking"
+    ],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Must concatenate dictated digits into full phone number"
+    ],
+    "forbidden_actions": []
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "tuesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "wednesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "thursday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "friday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "saturday": {
+        "open": "08:00",
+        "close": "14:00"
+      },
+      "sunday": null
+    },
+    "services": [
+      {
+        "id": "routine_maintenance",
+        "name": "Routine Maintenance",
+        "duration_minutes": 60
+      },
+      {
+        "id": "emergency_plumbing",
+        "name": "Emergency Plumbing",
+        "duration_minutes": 120
+      },
+      {
+        "id": "leak_detection",
+        "name": "Leak Detection",
+        "duration_minutes": 90
+      },
+      {
+        "id": "hot_water",
+        "name": "Hot Water System",
+        "duration_minutes": 90
+      },
+      {
+        "id": "drain_clearing",
+        "name": "Drain Clearing",
+        "duration_minutes": 60
+      },
+      {
+        "id": "quote_visit",
+        "name": "Quote Visit",
+        "duration_minutes": 60
+      }
+    ],
+    "integrations": {
+      "google_calendar": {
+        "enabled": true,
+        "calendar_id": "primary"
+      }
+    }
+  },
+  "tags": [
+    "phone",
+    "tradies",
+    "mobile",
+    "dictated_digits",
+    "suite_b",
+    "critical_precision"
+  ]
+}

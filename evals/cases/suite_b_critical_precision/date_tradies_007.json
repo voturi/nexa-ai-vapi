@@ -1,0 +1,127 @@
+{
+  "case_id": "date_tradies_007",
+  "description": "'first available this week' \u2014 vague preference, agent must check and offer rather than assume",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "medium",
+  "risk_tier": "P2",
+  "caller_turns": [
+    "I need to get someone out for routine maintenance",
+    "Whatever's first available this week is fine. I'm Nadia Kovacs, number is 0418 999 000",
+    "Yes, 9am Thursday morning works perfectly, please go ahead and lock that in",
+    "The address is 55 Crown Street, Surry Hills"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "routine_maintenance",
+      "date": "first available this week",
+      "customer_name": "Nadia Kovacs",
+      "customer_phone": "0418 999 000",
+      "address": "55 Crown Street, Surry Hills"
+    },
+    "critical_tokens": {
+      "customer_phone": "0418999000",
+      "address": "55 crown street surry hills"
+    },
+    "expected_tools": [
+      "check_availability",
+      "create_booking"
+    ],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Must check availability and offer specific time options",
+      "Must not assume a day without checking"
+    ],
+    "forbidden_actions": [
+      "Book without checking availability first"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "tuesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "wednesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "thursday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "friday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "saturday": {
+        "open": "08:00",
+        "close": "14:00"
+      },
+      "sunday": null
+    },
+    "services": [
+      {
+        "id": "routine_maintenance",
+        "name": "Routine Maintenance",
+        "duration_minutes": 60
+      },
+      {
+        "id": "emergency_plumbing",
+        "name": "Emergency Plumbing",
+        "duration_minutes": 120
+      },
+      {
+        "id": "leak_detection",
+        "name": "Leak Detection",
+        "duration_minutes": 90
+      },
+      {
+        "id": "hot_water",
+        "name": "Hot Water System",
+        "duration_minutes": 90
+      },
+      {
+        "id": "drain_clearing",
+        "name": "Drain Clearing",
+        "duration_minutes": 60
+      },
+      {
+        "id": "quote_visit",
+        "name": "Quote Visit",
+        "duration_minutes": 60
+      }
+    ],
+    "integrations": {
+      "google_calendar": {
+        "enabled": true,
+        "calendar_id": "primary"
+      }
+    }
+  },
+  "tags": [
+    "date",
+    "tradies",
+    "vague_date",
+    "first_available",
+    "suite_b",
+    "critical_precision"
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "case_id": "address_tradies_010",
+  "description": "Investment property address given by owner \u2014 address differs from caller location, agent must capture job address not caller's home",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, I need to arrange a plumber for routine maintenance at my investment property",
+    "Wednesday morning works. I'm Richard Stone, my mobile is 0452 678 901. The job address is 45 Bridge Road, Glebe \u2014 that's the investment property, just need a general check of taps and pipes",
+    "Yes, 45 Bridge Road Glebe is the job site, I live elsewhere. Please lock in 9am Wednesday morning",
+    "Yes that's all correct, 45 Bridge Road Glebe, routine maintenance, please go ahead and book it in"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "routine_maintenance",
+      "date": "Wednesday morning",
+      "customer_name": "Richard Stone",
+      "customer_phone": "0452 678 901",
+      "address": "45 Bridge Road, Glebe"
+    },
+    "critical_tokens": {
+      "customer_phone": "0452678901",
+      "address": "45 bridge road glebe"
+    },
+    "expected_tools": [
+      "check_availability",
+      "create_booking"
+    ],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Must capture the job address (investment property), not infer the caller's home address",
+      "Must confirm job address is 45 Bridge Road Glebe before booking"
+    ],
+    "forbidden_actions": [
+      "Hallucinate caller's home address as the job address"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "tuesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "wednesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "thursday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "friday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "saturday": {
+        "open": "08:00",
+        "close": "14:00"
+      },
+      "sunday": null
+    },
+    "services": [
+      {
+        "id": "routine_maintenance",
+        "name": "Routine Maintenance",
+        "duration_minutes": 60
+      },
+      {
+        "id": "emergency_plumbing",
+        "name": "Emergency Plumbing",
+        "duration_minutes": 120
+      },
+      {
+        "id": "leak_detection",
+        "name": "Leak Detection",
+        "duration_minutes": 90
+      },
+      {
+        "id": "hot_water",
+        "name": "Hot Water System",
+        "duration_minutes": 90
+      },
+      {
+        "id": "drain_clearing",
+        "name": "Drain Clearing",
+        "duration_minutes": 60
+      },
+      {
+        "id": "quote_visit",
+        "name": "Quote Visit",
+        "duration_minutes": 60
+      }
+    ],
+    "integrations": {
+      "google_calendar": {
+        "enabled": true,
+        "calendar_id": "primary"
+      }
+    }
+  },
+  "tags": [
+    "address",
+    "tradies",
+    "investment_property",
+    "glebe",
+    "address_disambiguation",
+    "suite_b",
+    "critical_precision"
+  ]
+}

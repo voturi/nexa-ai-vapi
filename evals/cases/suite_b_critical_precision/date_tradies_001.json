@@ -1,0 +1,128 @@
+{
+  "case_id": "date_tradies_001",
+  "description": "'tomorrow arvo' \u2014 AU slang for tomorrow afternoon, agent must capture and book correctly",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "Hi, can I book a routine maintenance job?",
+    "Tomorrow arvo works. I'm Ben Scott, number is 0411 222 333",
+    "Yes, 2pm tomorrow afternoon works perfectly, please go ahead and lock that in",
+    "The job's at 15 Smith Street, Marrickville"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "routine_maintenance",
+      "date": "tomorrow afternoon",
+      "customer_name": "Ben Scott",
+      "customer_phone": "0411 222 333",
+      "address": "15 Smith Street, Marrickville"
+    },
+    "critical_tokens": {
+      "customer_phone": "0411222333",
+      "date": "tomorrow afternoon",
+      "address": "15 smith street marrickville"
+    },
+    "expected_tools": [
+      "check_availability",
+      "create_booking"
+    ],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Must interpret 'arvo' as afternoon"
+    ],
+    "forbidden_actions": [
+      "Book for morning when caller said afternoon"
+    ]
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "tuesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "wednesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "thursday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "friday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "saturday": {
+        "open": "08:00",
+        "close": "14:00"
+      },
+      "sunday": null
+    },
+    "services": [
+      {
+        "id": "routine_maintenance",
+        "name": "Routine Maintenance",
+        "duration_minutes": 60
+      },
+      {
+        "id": "emergency_plumbing",
+        "name": "Emergency Plumbing",
+        "duration_minutes": 120
+      },
+      {
+        "id": "leak_detection",
+        "name": "Leak Detection",
+        "duration_minutes": 90
+      },
+      {
+        "id": "hot_water",
+        "name": "Hot Water System",
+        "duration_minutes": 90
+      },
+      {
+        "id": "drain_clearing",
+        "name": "Drain Clearing",
+        "duration_minutes": 60
+      },
+      {
+        "id": "quote_visit",
+        "name": "Quote Visit",
+        "duration_minutes": 60
+      }
+    ],
+    "integrations": {
+      "google_calendar": {
+        "enabled": true,
+        "calendar_id": "primary"
+      }
+    }
+  },
+  "tags": [
+    "date",
+    "tradies",
+    "au_slang",
+    "arvo",
+    "tomorrow",
+    "suite_b",
+    "critical_precision"
+  ]
+}

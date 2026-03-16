@@ -1,0 +1,124 @@
+{
+  "case_id": "phone_tradies_003",
+  "description": "International +61 format with spaces \u2014 must normalise to 04xx mobile",
+  "business_domain": "tradies",
+  "scenario_type": "appointment_booking",
+  "priority": "high",
+  "risk_tier": "P1",
+  "caller_turns": [
+    "G'day, can I get a plumber out for some routine maintenance?",
+    "Monday morning would be great. I'm James Wilson, number is plus 61 423 456 789",
+    "Monday at 9 works perfectly, please confirm that",
+    "The address is 9 Military Road, Mosman"
+  ],
+  "mock_tool_responses": [],
+  "ground_truth": {
+    "intent": "create_booking",
+    "slots": {
+      "service": "routine_maintenance",
+      "date": "Monday morning",
+      "customer_name": "James Wilson",
+      "customer_phone": "+61 423 456 789",
+      "address": "9 Military Road, Mosman"
+    },
+    "critical_tokens": {
+      "customer_phone": "0423456789",
+      "address": "9 military road mosman"
+    },
+    "expected_tools": [
+      "check_availability",
+      "create_booking"
+    ],
+    "expected_outcome": "booking_confirmed",
+    "policy_expectations": [
+      "Must normalise +61 prefix to leading 0"
+    ],
+    "forbidden_actions": []
+  },
+  "success_criteria": {
+    "must_capture_intent": true,
+    "must_not_hallucinate_slots": true,
+    "must_complete_task": true,
+    "must_call_expected_tools": true,
+    "must_match_critical_tokens": true
+  },
+  "tenant_config": {
+    "business_name": "Mike's Plumbing Services",
+    "vertical": "tradies",
+    "phone": "+61 2 1234 5678",
+    "timezone": "Australia/Sydney",
+    "operating_hours": {
+      "monday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "tuesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "wednesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "thursday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "friday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "saturday": {
+        "open": "08:00",
+        "close": "14:00"
+      },
+      "sunday": null
+    },
+    "services": [
+      {
+        "id": "routine_maintenance",
+        "name": "Routine Maintenance",
+        "duration_minutes": 60
+      },
+      {
+        "id": "emergency_plumbing",
+        "name": "Emergency Plumbing",
+        "duration_minutes": 120
+      },
+      {
+        "id": "leak_detection",
+        "name": "Leak Detection",
+        "duration_minutes": 90
+      },
+      {
+        "id": "hot_water",
+        "name": "Hot Water System",
+        "duration_minutes": 90
+      },
+      {
+        "id": "drain_clearing",
+        "name": "Drain Clearing",
+        "duration_minutes": 60
+      },
+      {
+        "id": "quote_visit",
+        "name": "Quote Visit",
+        "duration_minutes": 60
+      }
+    ],
+    "integrations": {
+      "google_calendar": {
+        "enabled": true,
+        "calendar_id": "primary"
+      }
+    }
+  },
+  "tags": [
+    "phone",
+    "tradies",
+    "mobile",
+    "international_prefix",
+    "suite_b",
+    "critical_precision"
+  ]
+}

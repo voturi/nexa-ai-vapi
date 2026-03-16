@@ -1,14 +1,28 @@
 """
-Replay runner — Phase 1 (transcript mode).
+Replay runner — Phase 1 (transcript mode) + Phase 2 (Langfuse tracing).
 
 Feeds caller turns through the skills engine + Claude directly,
 mocking all tool calls via MockToolExecutor.
 
 Does NOT require a database connection.
 Requires ANTHROPIC_API_KEY in environment.
+
+Langfuse tracing (Phase 2):
+  Each EvalCase run produces one Langfuse trace, visible at http://localhost:3000.
+  Trace structure per case:
+    Trace  "eval_run"                    ← one per case, tagged + metadata
+      Span   "turn_0"                    ← one per caller turn
+        Generation "claude_call_0"       ← one per Anthropic API call (incl. tool loops)
+        Span       "tool_<name>"         ← one per tool called inside that turn
+      Span   "turn_1"
+        ...
+
+  Requires LANGFUSE_SECRET_KEY, LANGFUSE_PUBLIC_KEY, LANGFUSE_HOST in .env.
+  Gracefully disabled when langfuse is not installed or env vars are missing.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -17,6 +31,14 @@ from pathlib import Path
 from typing import Any, Optional
 
 import anthropic
+
+# ── Langfuse (optional) ───────────────────────────────────────────────────────
+try:
+    from langfuse import Langfuse as _Langfuse
+    _LANGFUSE_AVAILABLE = True
+except ImportError:
+    _Langfuse = None          # type: ignore[assignment,misc]
+    _LANGFUSE_AVAILABLE = False
 
 # Ensure the backend package is importable when running from the evals directory
 _BACKEND_ROOT = Path(__file__).parent.parent.parent
@@ -56,9 +78,10 @@ EVAL_TOOLS: list[dict[str, Any]] = [
                 "customer_name": {"type": "string"},
                 "customer_phone": {"type": "string"},
                 "customer_email": {"type": "string"},
+                "address": {"type": "string", "description": "Job site address"},
                 "notes": {"type": "string"},
             },
-            "required": ["service_id", "datetime", "customer_name", "customer_phone"],
+            "required": ["service_id", "datetime", "customer_name", "customer_phone", "address"],
         },
     },
     {
@@ -144,6 +167,43 @@ class ReplayRunner:
         )
         self.model = model
 
+        # Initialise Langfuse client — reads LANGFUSE_SECRET_KEY, LANGFUSE_PUBLIC_KEY,
+        # LANGFUSE_HOST from environment. None when not configured or package absent.
+        self._lf = None
+        if _LANGFUSE_AVAILABLE:
+            try:
+                self._lf = _Langfuse()
+            except Exception:
+                pass  # missing env vars — tracing disabled, evals still run normally
+
+    def _get_or_create_lf_prompt(self, prompt_name: str, system_prompt: str) -> Any:
+        """
+        Push the system prompt to Langfuse Prompt Management if it doesn't exist
+        or has changed (detected via SHA-1 content hash embedded in the label).
+
+        Returns a Langfuse prompt object that can be linked to generations,
+        or None if Langfuse is not available.
+        """
+        if not self._lf:
+            return None
+        try:
+            content_hash = hashlib.sha1(system_prompt.encode()).hexdigest()[:8]
+            label = f"eval-{content_hash}"
+            # Try to fetch existing prompt with this label
+            try:
+                return self._lf.get_prompt(prompt_name, label=label)
+            except Exception:
+                pass  # Not found — create it
+            # Create a new version with the current content
+            return self._lf.create_prompt(
+                name=prompt_name,
+                prompt=system_prompt,
+                labels=[label, "eval"],
+                config={"model": self.model, "content_hash": content_hash},
+            )
+        except Exception:
+            return None
+
     def run(self, case: EvalCase) -> EvalTrace:
         """Run a case and return the captured trace. Never raises — errors are stored in trace."""
         start = time.monotonic()
@@ -168,14 +228,58 @@ class ReplayRunner:
             tenant_config=tc,
         )
 
+        # ── Langfuse prompt versioning ────────────────────────────────────────
+        vertical = tc.get("vertical", "smb_general")
+        lf_prompt = self._get_or_create_lf_prompt(
+            prompt_name=f"system_prompt_{vertical}",
+            system_prompt=system_prompt,
+        )
+
+        # ── Langfuse trace ────────────────────────────────────────────────────
+        lf_trace = None
+        if self._lf:
+            try:
+                lf_trace = self._lf.trace(
+                    name="eval_run",
+                    input={
+                        "case_id": case.case_id,
+                        "caller_turns": case.caller_turns,
+                        "ground_truth": {
+                            "intent": case.ground_truth.intent,
+                            "expected_outcome": case.ground_truth.expected_outcome,
+                            "critical_tokens": case.ground_truth.critical_tokens,
+                        },
+                    },
+                    metadata={
+                        "case_id": case.case_id,
+                        "vertical": tc.get("vertical"),
+                        "risk_tier": case.risk_tier,
+                        "scenario_type": case.scenario_type,
+                        "business_domain": case.business_domain,
+                    },
+                    tags=list(case.tags) + ["eval", "replay"],
+                )
+            except Exception:
+                lf_trace = None  # tracing failures must not break evals
+
         trace = EvalTrace(case_id=case.case_id)
         messages: list[dict[str, Any]] = []
         tools_called: list[str] = []
         tool_arguments: list[dict[str, Any]] = []
 
-        for caller_text in case.caller_turns:
+        for i, caller_text in enumerate(case.caller_turns):
             messages.append({"role": "user", "content": caller_text})
             trace.conversation.append(ConversationTurn(role="caller", text=caller_text))
+
+            lf_turn_span = None
+            if lf_trace:
+                try:
+                    lf_turn_span = lf_trace.span(
+                        name=f"turn_{i}",
+                        input={"caller": caller_text},
+                    )
+                except Exception:
+                    lf_turn_span = None
 
             agent_text = self._run_agent_turn(
                 messages=messages,
@@ -183,7 +287,15 @@ class ReplayRunner:
                 tool_executor=tool_executor,
                 tools_called=tools_called,
                 tool_arguments=tool_arguments,
+                lf_span=lf_turn_span,
+                lf_prompt=lf_prompt,
             )
+
+            if lf_turn_span:
+                try:
+                    lf_turn_span.end(output={"agent": agent_text})
+                except Exception:
+                    pass
 
             trace.conversation.append(ConversationTurn(role="agent", text=agent_text))
             trace.agent_turns.append(agent_text)
@@ -197,6 +309,22 @@ class ReplayRunner:
         trace.extracted_slots = self._extract_slots(trace)
         trace.final_outcome = self._infer_outcome(trace)
 
+        # ── Update Langfuse trace with final results ───────────────────────────
+        if lf_trace:
+            try:
+                lf_trace.update(
+                    output={
+                        "inferred_intent": trace.inferred_intent,
+                        "extracted_slots": trace.extracted_slots,
+                        "tools_called": trace.tools_called,
+                        "final_outcome": trace.final_outcome,
+                        "duration_ms": trace.duration_ms,
+                    }
+                )
+                self._lf.flush()
+            except Exception:
+                pass
+
         return trace
 
     def _run_agent_turn(
@@ -206,6 +334,8 @@ class ReplayRunner:
         tool_executor: MockToolExecutor,
         tools_called: list[str],
         tool_arguments: list[dict[str, Any]],
+        lf_span: Any = None,
+        lf_prompt: Any = None,
     ) -> str:
         """
         Run one agent turn, handling tool-use loops.
@@ -214,7 +344,24 @@ class ReplayRunner:
         is preserved for subsequent turns.
         Returns the final text response.
         """
+        call_index = 0
         while True:
+            lf_gen = None
+            if lf_span:
+                try:
+                    # Include system prompt as first message so it's visible in the trace
+                    full_input = [{"role": "system", "content": system_prompt}] + messages
+                    gen_kwargs: dict[str, Any] = {
+                        "name": f"claude_call_{call_index}",
+                        "model": self.model,
+                        "input": full_input,
+                    }
+                    if lf_prompt:
+                        gen_kwargs["prompt"] = lf_prompt
+                    lf_gen = lf_span.generation(**gen_kwargs)
+                except Exception:
+                    lf_gen = None
+
             response = self.client.messages.create(
                 model=self.model,
                 max_tokens=1024,
@@ -222,6 +369,20 @@ class ReplayRunner:
                 tools=EVAL_TOOLS,
                 messages=messages,
             )
+
+            if lf_gen:
+                try:
+                    lf_gen.end(
+                        output=_content_blocks_to_dicts(response.content),
+                        usage={
+                            "input": response.usage.input_tokens,
+                            "output": response.usage.output_tokens,
+                        },
+                    )
+                except Exception:
+                    pass
+
+            call_index += 1
 
             if response.stop_reason == "tool_use":
                 # Append assistant message with tool_use blocks
@@ -232,6 +393,16 @@ class ReplayRunner:
                 tool_results: list[dict[str, Any]] = []
                 for block in response.content:
                     if block.type == "tool_use":
+                        lf_tool_span = None
+                        if lf_span:
+                            try:
+                                lf_tool_span = lf_span.span(
+                                    name=f"tool_{block.name}",
+                                    input=block.input,
+                                )
+                            except Exception:
+                                lf_tool_span = None
+
                         result = tool_executor.execute(block.name, block.input)
                         tools_called.append(block.name)
                         tool_arguments.append({"tool": block.name, "args": block.input})
@@ -240,6 +411,12 @@ class ReplayRunner:
                             "tool_use_id": block.id,
                             "content": json.dumps(result),
                         })
+
+                        if lf_tool_span:
+                            try:
+                                lf_tool_span.end(output=result)
+                            except Exception:
+                                pass
 
                 messages.append({"role": "user", "content": tool_results})
                 continue  # Let Claude continue after seeing the tool results
@@ -271,9 +448,17 @@ class ReplayRunner:
         if "cancel_booking" in tool_set:
             return "cancel_booking"
         if "create_lead" in tool_set:
-            # Distinguish leave_message from request_quote by context
-            combined = " ".join(trace.agent_turns).lower()
-            if any(w in combined for w in ["quote", "price", "cost", "estimate", "fee"]):
+            # Distinguish leave_message from request_quote using caller intent
+            # (caller turns are more reliable than agent turns for intent)
+            caller_text = " ".join(
+                t.text for t in trace.conversation if t.role == "caller"
+            ).lower()
+            agent_text = " ".join(trace.agent_turns).lower()
+            quote_keywords = ["quote", "price", "cost", "estimate", "how much"]
+            if any(w in caller_text for w in quote_keywords):
+                return "request_quote"
+            # Fallback: check agent turns, but exclude generic callback phrases
+            if any(w in agent_text for w in ["quote", "pricing", "estimate", "fee"]):
                 return "request_quote"
             return "leave_message"
         if "check_availability" in tool_set and "create_booking" not in tool_set:
@@ -318,6 +503,8 @@ class ReplayRunner:
                 slots["datetime"] = args["datetime"]
             if args.get("preferred_date"):
                 slots["date"] = args["preferred_date"]
+            if args.get("address"):
+                slots["address"] = args["address"]
             if args.get("notes"):
                 slots["notes"] = args["notes"]
             if args.get("date"):
