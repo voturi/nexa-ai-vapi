@@ -5,7 +5,7 @@ from typing import List
 from uuid import UUID
 
 from app.core.database import get_db
-from app.core.security import get_current_tenant
+from app.core.auth import get_current_user_tenant as get_current_tenant
 from app.schemas.booking import BookingCreate, BookingUpdate, BookingResponse
 from app.services.booking_service import BookingService
 
