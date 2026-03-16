@@ -136,12 +136,33 @@ class AssistantCache:
                     "description": "Create a booking appointment for a customer",
                     "parameters": {
                         "type": "object",
-                        "required": ["service_id", "customer_name", "customer_phone", "scheduled_datetime"],
+                        "required": ["service_id", "customer_name", "customer_phone", "address", "scheduled_datetime"],
                         "properties": {
                             "service_id": {"type": "string", "description": "ID of the service to book"},
                             "customer_name": {"type": "string", "description": "Customer's full name"},
                             "customer_phone": {"type": "string", "description": "Customer's phone number"},
+                            "customer_email": {"type": "string", "description": "Customer's email address"},
+                            "address": {"type": "string", "description": "Job site or appointment address"},
                             "scheduled_datetime": {"type": "string", "description": "Appointment date and time in ISO format"},
+                            "notes": {"type": "string", "description": "Additional notes from the conversation"}
+                        }
+                    }
+                },
+                "server": {"url": f"{backend_url}/webhooks/vapi/function-call"}
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "create_lead",
+                    "description": "Capture a lead when customer is not ready to book or wants a callback",
+                    "parameters": {
+                        "type": "object",
+                        "required": ["customer_name", "customer_phone"],
+                        "properties": {
+                            "customer_name": {"type": "string", "description": "Customer's name"},
+                            "customer_phone": {"type": "string", "description": "Customer's phone number"},
+                            "customer_email": {"type": "string", "description": "Customer's email address"},
+                            "interest": {"type": "string", "description": "What service or product they're interested in"},
                             "notes": {"type": "string", "description": "Additional notes from the conversation"}
                         }
                     }
@@ -183,11 +204,12 @@ class AssistantCache:
                 },
                 "voice": {
                     "provider": "11labs",
-                    "voiceId": "21m00Tcm4TlvDq8ikWAM",
-                    "stability": 0.5,
-                    "similarityBoost": 0.75
+                    "voiceId": "pFZP5JQG7iQjIQuC4Bku",
+                    "stability": 0.6,
+                    "similarityBoost": 0.80,
+                    "style": 0.35
                 },
-                "firstMessage": f"G'day! You've reached {tenant.business_name}. How can I help you today?",
+                "firstMessage": f"G'day! Thanks for calling {tenant.business_name}. How can I help?",
                 "transcriber": {
                     "provider": "deepgram",
                     "model": "nova-2",

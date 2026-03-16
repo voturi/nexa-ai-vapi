@@ -1,6 +1,6 @@
 {
   "case_id": "date_tradies_010",
-  "description": "'sometime next week, preferably Tuesday or Wednesday' — preference range, agent checks both and offers one",
+  "description": "'sometime next week, preferably Tuesday or Wednesday' \u2014 preference range, agent checks both and offers one",
   "business_domain": "tradies",
   "scenario_type": "appointment_booking",
   "priority": "medium",
@@ -8,7 +8,8 @@
   "caller_turns": [
     "Can I get a booking for leak detection?",
     "Sometime next week, Tuesday or Wednesday if possible. I'm Jenny Tan, my number is 0433 100 200",
-    "Yes, 2pm Wednesday next week works perfectly, please go ahead and lock that in"
+    "Yes, 2pm Wednesday next week works perfectly, please go ahead and lock that in",
+    "Address is 66 Pitt Street, Redfern"
   ],
   "mock_tool_responses": [],
   "ground_truth": {
@@ -17,13 +18,18 @@
       "service": "leak_detection",
       "date": "next week Tuesday or Wednesday",
       "customer_name": "Jenny Tan",
-      "customer_phone": "0433 100 200"
+      "customer_phone": "0433 100 200",
+      "address": "66 Pitt Street, Redfern"
     },
     "critical_tokens": {
       "customer_phone": "0433100200",
-      "date": "next week wednesday"
+      "date": "next week wednesday",
+      "address": "66 pitt street redfern"
     },
-    "expected_tools": ["check_availability", "create_booking"],
+    "expected_tools": [
+      "check_availability",
+      "create_booking"
+    ],
     "expected_outcome": "booking_confirmed",
     "policy_expectations": [
       "Must check Tuesday and Wednesday next week",
@@ -44,25 +50,77 @@
     "phone": "+61 2 1234 5678",
     "timezone": "Australia/Sydney",
     "operating_hours": {
-      "monday": {"open": "07:00", "close": "18:00"},
-      "tuesday": {"open": "07:00", "close": "18:00"},
-      "wednesday": {"open": "07:00", "close": "18:00"},
-      "thursday": {"open": "07:00", "close": "18:00"},
-      "friday": {"open": "07:00", "close": "18:00"},
-      "saturday": {"open": "08:00", "close": "14:00"},
+      "monday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "tuesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "wednesday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "thursday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "friday": {
+        "open": "07:00",
+        "close": "18:00"
+      },
+      "saturday": {
+        "open": "08:00",
+        "close": "14:00"
+      },
       "sunday": null
     },
     "services": [
-      {"id": "routine_maintenance", "name": "Routine Maintenance", "duration_minutes": 60},
-      {"id": "emergency_plumbing", "name": "Emergency Plumbing", "duration_minutes": 120},
-      {"id": "leak_detection", "name": "Leak Detection", "duration_minutes": 90},
-      {"id": "hot_water", "name": "Hot Water System", "duration_minutes": 90},
-      {"id": "drain_clearing", "name": "Drain Clearing", "duration_minutes": 60},
-      {"id": "quote_visit", "name": "Quote Visit", "duration_minutes": 60}
+      {
+        "id": "routine_maintenance",
+        "name": "Routine Maintenance",
+        "duration_minutes": 60
+      },
+      {
+        "id": "emergency_plumbing",
+        "name": "Emergency Plumbing",
+        "duration_minutes": 120
+      },
+      {
+        "id": "leak_detection",
+        "name": "Leak Detection",
+        "duration_minutes": 90
+      },
+      {
+        "id": "hot_water",
+        "name": "Hot Water System",
+        "duration_minutes": 90
+      },
+      {
+        "id": "drain_clearing",
+        "name": "Drain Clearing",
+        "duration_minutes": 60
+      },
+      {
+        "id": "quote_visit",
+        "name": "Quote Visit",
+        "duration_minutes": 60
+      }
     ],
     "integrations": {
-      "google_calendar": {"enabled": true, "calendar_id": "primary"}
+      "google_calendar": {
+        "enabled": true,
+        "calendar_id": "primary"
+      }
     }
   },
-  "tags": ["date", "tradies", "preference_range", "next_week", "suite_b", "critical_precision"]
+  "tags": [
+    "date",
+    "tradies",
+    "preference_range",
+    "next_week",
+    "suite_b",
+    "critical_precision"
+  ]
 }

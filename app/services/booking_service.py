@@ -55,6 +55,7 @@ class BookingService:
         service_name: Optional[str] = None,
         duration_minutes: int = 60,
         timezone: Optional[str] = None,
+        booking_metadata: Optional[dict] = None,
     ) -> Booking:
         """Create a booking record."""
         booking = Booking(
@@ -70,6 +71,7 @@ class BookingService:
             timezone=timezone,
             status="confirmed",
             notes=notes,
+            booking_metadata=booking_metadata,
         )
         self.db.add(booking)
         await self.db.commit()
@@ -98,6 +100,7 @@ class BookingService:
         customer_name = parameters.get("customer_name", "Customer")
         customer_phone = parameters.get("customer_phone", "")
         customer_email = parameters.get("customer_email")
+        address = parameters.get("address")
         notes = parameters.get("notes")
         scheduled_datetime_str = parameters.get("scheduled_datetime", "")
 
@@ -122,6 +125,10 @@ class BookingService:
                 duration_minutes = svc.get("duration_minutes", 60)
                 break
 
+        booking_metadata = {}
+        if address:
+            booking_metadata["address"] = address
+
         return await self.create(
             tenant_id=tenant.id,
             service_id=service_id,
@@ -134,6 +141,7 @@ class BookingService:
             service_name=service_name,
             duration_minutes=duration_minutes,
             timezone=tenant.timezone,
+            booking_metadata=booking_metadata or None,
         )
 
     async def update(self, booking_id: UUID, booking_data: dict) -> Optional[Booking]:

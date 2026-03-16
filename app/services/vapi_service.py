@@ -95,7 +95,7 @@ class VAPIService:
                     "description": "Create a booking appointment for a customer",
                     "parameters": {
                         "type": "object",
-                        "required": ["service_id", "customer_name", "customer_phone", "scheduled_datetime"],
+                        "required": ["service_id", "customer_name", "customer_phone", "address", "scheduled_datetime"],
                         "properties": {
                             "service_id": {
                                 "type": "string",
@@ -112,6 +112,10 @@ class VAPIService:
                             "customer_email": {
                                 "type": "string",
                                 "description": "Customer's email address"
+                            },
+                            "address": {
+                                "type": "string",
+                                "description": "Job site or appointment address"
                             },
                             "scheduled_datetime": {
                                 "type": "string",
@@ -285,11 +289,12 @@ class VAPIService:
                 },
                 "voice": {
                     "provider": "11labs",
-                    "voiceId": "21m00Tcm4TlvDq8ikWAM",
-                    "stability": 0.5,
-                    "similarityBoost": 0.75
+                    "voiceId": "pFZP5JQG7iQjIQuC4Bku",
+                    "stability": 0.6,
+                    "similarityBoost": 0.80,
+                    "style": 0.35
                 },
-                "firstMessage": f"G'day! You've reached {tenant.business_name}. How can I help you today?",
+                "firstMessage": f"G'day! Thanks for calling {tenant.business_name}. How can I help?",
                 "transcriber": {
                     "provider": "deepgram",
                     "model": "nova-2",

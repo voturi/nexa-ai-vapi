@@ -78,9 +78,10 @@ EVAL_TOOLS: list[dict[str, Any]] = [
                 "customer_name": {"type": "string"},
                 "customer_phone": {"type": "string"},
                 "customer_email": {"type": "string"},
+                "address": {"type": "string", "description": "Job site address"},
                 "notes": {"type": "string"},
             },
-            "required": ["service_id", "datetime", "customer_name", "customer_phone"],
+            "required": ["service_id", "datetime", "customer_name", "customer_phone", "address"],
         },
     },
     {
@@ -447,9 +448,17 @@ class ReplayRunner:
         if "cancel_booking" in tool_set:
             return "cancel_booking"
         if "create_lead" in tool_set:
-            # Distinguish leave_message from request_quote by context
-            combined = " ".join(trace.agent_turns).lower()
-            if any(w in combined for w in ["quote", "price", "cost", "estimate", "fee"]):
+            # Distinguish leave_message from request_quote using caller intent
+            # (caller turns are more reliable than agent turns for intent)
+            caller_text = " ".join(
+                t.text for t in trace.conversation if t.role == "caller"
+            ).lower()
+            agent_text = " ".join(trace.agent_turns).lower()
+            quote_keywords = ["quote", "price", "cost", "estimate", "how much"]
+            if any(w in caller_text for w in quote_keywords):
+                return "request_quote"
+            # Fallback: check agent turns, but exclude generic callback phrases
+            if any(w in agent_text for w in ["quote", "pricing", "estimate", "fee"]):
                 return "request_quote"
             return "leave_message"
         if "check_availability" in tool_set and "create_booking" not in tool_set:
@@ -494,6 +503,8 @@ class ReplayRunner:
                 slots["datetime"] = args["datetime"]
             if args.get("preferred_date"):
                 slots["date"] = args["preferred_date"]
+            if args.get("address"):
+                slots["address"] = args["address"]
             if args.get("notes"):
                 slots["notes"] = args["notes"]
             if args.get("date"):
