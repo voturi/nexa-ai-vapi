@@ -15,7 +15,9 @@ class Settings(BaseSettings):
     DATABASE_URL: Optional[str] = None
     SUPABASE_URL: Optional[str] = None
     SUPABASE_KEY: Optional[str] = None
+    SUPABASE_ANON_KEY: Optional[str] = None
     SUPABASE_SERVICE_KEY: Optional[str] = None
+    SUPABASE_JWT_SECRET: Optional[str] = None
     REDIS_URL: str = "redis://localhost:6379"
 
     # VAPI
