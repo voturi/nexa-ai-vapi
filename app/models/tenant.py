@@ -38,6 +38,9 @@ class Tenant(Base):
     api_key = Column(String(255), unique=True, nullable=False)
     webhook_secret = Column(String(255), nullable=False)
 
+    # Supabase Auth — links a Supabase user to this tenant
+    supabase_user_id = Column(String(255), unique=True, nullable=True)
+
     # Subscription
     subscription_tier = Column(String(50), default="basic")
     subscription_status = Column(String(50), default="active")

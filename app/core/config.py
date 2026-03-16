@@ -15,7 +15,9 @@ class Settings(BaseSettings):
     DATABASE_URL: Optional[str] = None
     SUPABASE_URL: Optional[str] = None
     SUPABASE_KEY: Optional[str] = None
+    SUPABASE_ANON_KEY: Optional[str] = None
     SUPABASE_SERVICE_KEY: Optional[str] = None
+    SUPABASE_JWT_SECRET: Optional[str] = None
     REDIS_URL: str = "redis://localhost:6379"
 
     # VAPI
@@ -33,7 +35,7 @@ class Settings(BaseSettings):
 
     # URLs
     BACKEND_URL: str = "http://localhost:8000"
-    FRONTEND_URL: str = "http://localhost:3000"
+    FRONTEND_URL: str = "http://localhost:3001"
 
     # Environment
     ENVIRONMENT: str = "development"

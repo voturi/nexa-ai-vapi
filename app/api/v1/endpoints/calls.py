@@ -5,7 +5,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.core.database import get_db
-from app.core.security import get_current_tenant
+from app.core.auth import get_current_user_tenant as get_current_tenant
 from app.schemas.call import CallResponse
 from app.services.call_service import CallService
 
