@@ -181,28 +181,29 @@ async def debug_webhook(request: Request):
 @observe(name="vapi_call_started")
 async def handle_call_started(
     request: Request,
-    db: AsyncSession = Depends(get_db),
 ):
     """
     Handle call started webhook from VAPI.
 
     Triggered when a call begins. This is where we inject dynamic context
     and tenant-specific prompts.
+
+    NOTE: DB session is NOT injected eagerly — on cache hits (the hot path)
+    we skip the DB round-trip entirely to stay well under VAPI's 7.5 s timeout.
     """
     try:
-        body = await request.body()
         data = await request.json()
 
         # Validate data
         if not data or not isinstance(data, dict):
-            logger.error("webhook_call_started_invalid_data", body=body.decode('utf-8')[:500])
+            logger.error("webhook_call_started_invalid_data")
             return {"error": "Invalid request data"}
 
         # Check message type - VAPI sends different types to this endpoint
         message_type = data.get("message", {}).get("type")
 
-        # Extract tenant_id using helper function
-        tenant_id = await extract_tenant_id(data, db)
+        # Extract tenant_id using helper function (no DB needed — uses in-memory maps)
+        tenant_id = await extract_tenant_id(data, None)
 
         # Tag this Langfuse trace with call-level metadata for dashboard slicing
         langfuse_context.update_current_trace(
@@ -263,7 +264,7 @@ async def handle_call_started(
             # The assistant will use its default configuration
             return {}
 
-        # Try to get cached assistant config first (FAST PATH)
+        # Try to get cached assistant config first (FAST PATH — no DB needed)
         response_data = assistant_cache.get(tenant_id)
 
         if response_data:
@@ -274,13 +275,16 @@ async def handle_call_started(
             )
         else:
             # Cache miss - build from scratch (SLOW PATH - only on first call or cache invalidation)
+            # Only NOW do we open a DB session
             logger.warning(
                 "webhook_call_started_cache_miss",
                 tenant_id=tenant_id,
                 message_type=message_type
             )
-            vapi_service = VAPIService(db)
-            response_data = await vapi_service.handle_call_started(data, tenant_id=tenant_id)
+            from app.core.database import AsyncSessionLocal
+            async with AsyncSessionLocal() as db:
+                vapi_service = VAPIService(db)
+                response_data = await vapi_service.handle_call_started(data, tenant_id=tenant_id)
 
             # Cache it for next time
             assistant_cache.set(tenant_id, response_data)

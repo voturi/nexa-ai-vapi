@@ -94,6 +94,7 @@ class GoogleCalendarClient:
         date: str,
         duration_minutes: int = 60,
         business_hours: Optional[Dict[str, Any]] = None,
+        timezone: str = "Australia/Sydney",
     ) -> Dict[str, Any]:
         """
         Check available time slots for a given date.
@@ -106,6 +107,7 @@ class GoogleCalendarClient:
             date: Date string in YYYY-MM-DD format
             duration_minutes: Required slot duration in minutes
             business_hours: Dict with 'start' and 'end' times (e.g. {"start": "09:00", "end": "17:00"})
+            timezone: IANA timezone string for interpreting business hours
 
         Returns:
             Dict with available_slots list and metadata
@@ -118,20 +120,28 @@ class GoogleCalendarClient:
         except ValueError:
             return {"available_slots": [], "error": "Invalid date format"}
 
-        # Build time range for the day
+        import zoneinfo
+        tz = zoneinfo.ZoneInfo(timezone)
+
+        # Build time range for the day in the specified timezone
         day_start_str = f"{date}T{business_hours['start']}:00"
         day_end_str = f"{date}T{business_hours['end']}:00"
 
-        # Parse into datetime for slot calculation
+        # Parse into naive datetime for slot calculation
         day_start = datetime.strptime(day_start_str, "%Y-%m-%dT%H:%M:%S")
         day_end = datetime.strptime(day_end_str, "%Y-%m-%dT%H:%M:%S")
 
+        # Make timezone-aware for FreeBusy API (needs RFC3339)
+        day_start_aware = day_start.replace(tzinfo=tz)
+        day_end_aware = day_end.replace(tzinfo=tz)
+
         service = self._get_service()
 
-        # Query FreeBusy API
+        # Query FreeBusy API with RFC3339 timestamps
         body = {
-            "timeMin": day_start_str + "Z",
-            "timeMax": day_end_str + "Z",
+            "timeMin": day_start_aware.isoformat(),
+            "timeMax": day_end_aware.isoformat(),
+            "timeZone": timezone,
             "items": [{"id": calendar_id}],
         }
 
@@ -141,13 +151,16 @@ class GoogleCalendarClient:
             logger.error("google_calendar_freebusy_error", error=str(e))
             return {"available_slots": [], "error": f"Calendar API error: {e}"}
 
-        # Extract busy periods
+        # Extract busy periods — Google returns UTC times, convert to local naive
         busy_periods = []
         calendar_data = freebusy_result.get("calendars", {}).get(calendar_id, {})
         for busy in calendar_data.get("busy", []):
-            busy_start = datetime.fromisoformat(busy["start"].replace("Z", "+00:00")).replace(tzinfo=None)
-            busy_end = datetime.fromisoformat(busy["end"].replace("Z", "+00:00")).replace(tzinfo=None)
-            busy_periods.append((busy_start, busy_end))
+            busy_start_utc = datetime.fromisoformat(busy["start"].replace("Z", "+00:00"))
+            busy_end_utc = datetime.fromisoformat(busy["end"].replace("Z", "+00:00"))
+            # Convert to local naive datetime for comparison with day_start/day_end
+            busy_start_local = busy_start_utc.astimezone(tz).replace(tzinfo=None)
+            busy_end_local = busy_end_utc.astimezone(tz).replace(tzinfo=None)
+            busy_periods.append((busy_start_local, busy_end_local))
 
         # Sort busy periods
         busy_periods.sort(key=lambda x: x[0])

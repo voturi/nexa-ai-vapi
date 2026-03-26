@@ -67,3 +67,4 @@ secrets/
 # Recordings
 recordings/
 temp/
+.gstack/

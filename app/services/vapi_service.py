@@ -547,13 +547,26 @@ class VAPIService:
                 # Derive business hours from tenant config
                 operating_hours = tenant.operating_hours or {}
                 day_name = base_date.strftime("%A").lower()
-                day_hours = operating_hours.get(day_name, {"start": "09:00", "end": "17:00"})
+                raw_hours = operating_hours.get(day_name)
 
+                # Handle closed days (None or missing)
+                if not raw_hours:
+                    date_formatted = base_date.strftime("%A, %B %d, %Y")
+                    return f"Sorry, we're closed on {date_formatted}. Would you like to check another date?"
+
+                # Normalise key names: tenant config may use open/close or start/end
+                day_hours = {
+                    "start": raw_hours.get("start") or raw_hours.get("open", "09:00"),
+                    "end": raw_hours.get("end") or raw_hours.get("close", "17:00"),
+                }
+
+                tenant_tz = getattr(tenant, 'timezone', None) or "Australia/Sydney"
                 result = await client.check_availability(
                     calendar_id=calendar_id,
                     date=date_str,
                     duration_minutes=duration_minutes,
                     business_hours=day_hours,
+                    timezone=tenant_tz,
                 )
                 await self._persist_refreshed_token(tenant, client)
 
