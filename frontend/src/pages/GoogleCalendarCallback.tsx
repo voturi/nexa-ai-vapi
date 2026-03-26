@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, AlertCircle, Loader } from 'lucide-react';
-import { api } from '../lib/api';
 import { BackgroundOrbs } from '../components/ui/BackgroundOrbs';
 
 export function GoogleCalendarCallbackPage() {
@@ -10,52 +9,27 @@ export function GoogleCalendarCallbackPage() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const handleCallback = async () => {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        const state = params.get('state');
-        const error = params.get('error');
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('success');
+    const error = params.get('error');
 
-        if (error) {
-          setStatus('error');
-          setMessage(
-            error === 'access_denied'
-              ? 'Calendar connection was cancelled.'
-              : `OAuth error: ${error}`
-          );
-          return;
-        }
+    sessionStorage.removeItem('oauth_state');
 
-        if (!code || !state) {
-          setStatus('error');
-          setMessage('Missing authorization code or state parameter.');
-          return;
-        }
-
-        // Validate state param against stored value
-        const storedState = sessionStorage.getItem('oauth_state');
-        if (storedState && storedState !== state) {
-          setStatus('error');
-          setMessage('Invalid request — state parameter mismatch.');
-          return;
-        }
-        sessionStorage.removeItem('oauth_state');
-
-        const result = await api.completeGoogleCalendarOAuth(code, state);
-        setStatus('success');
-        setMessage(result.message || 'Google Calendar connected successfully!');
-
-        setTimeout(() => navigate('/settings'), 2000);
-      } catch (err) {
-        setStatus('error');
-        setMessage(
-          err instanceof Error ? err.message : 'Failed to connect Google Calendar'
-        );
-      }
-    };
-
-    handleCallback();
+    if (success === 'true') {
+      setStatus('success');
+      setMessage('Google Calendar connected successfully!');
+      setTimeout(() => navigate('/settings'), 2000);
+    } else if (error) {
+      setStatus('error');
+      setMessage(
+        error === 'access_denied'
+          ? 'Calendar connection was cancelled.'
+          : `OAuth error: ${error}`
+      );
+    } else {
+      setStatus('error');
+      setMessage('Unexpected callback — missing success or error parameter.');
+    }
   }, [navigate]);
 
   return (

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import get_current_tenant
+from app.core.auth import get_current_user_tenant
 from app.services.integration_service import IntegrationService
 
 logger = structlog.get_logger()
@@ -58,9 +58,9 @@ def _build_google_flow() -> Flow:
 # OAuth: Authorize (tenant must be authenticated)
 # --------------------------------------------------------------------------- #
 
-@router.get("/google-calendar/authorize")
+@router.post("/google-calendar/start")
 async def google_calendar_authorize(
-    tenant=Depends(get_current_tenant),
+    tenant=Depends(get_current_user_tenant),
 ):
     """
     Start Google Calendar OAuth flow.
@@ -109,7 +109,7 @@ async def google_calendar_callback(
     if error:
         logger.warning("google_calendar_oauth_denied", error=error)
         return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/integrations/google-calendar?error={error}"
+            url=f"{settings.FRONTEND_URL}/auth/google-calendar/callback?error={error}"
         )
 
     # Validate state
@@ -155,7 +155,7 @@ async def google_calendar_callback(
 
     # Redirect to frontend success page
     return RedirectResponse(
-        url=f"{settings.FRONTEND_URL}/integrations/google-calendar?success=true"
+        url=f"{settings.FRONTEND_URL}/auth/google-calendar/callback?success=true"
     )
 
 
@@ -165,7 +165,7 @@ async def google_calendar_callback(
 
 @router.get("/google-calendar/status")
 async def google_calendar_status(
-    tenant=Depends(get_current_tenant),
+    tenant=Depends(get_current_user_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """Check Google Calendar connection status for the current tenant."""
@@ -194,7 +194,7 @@ async def google_calendar_status(
 
 @router.delete("/google-calendar/disconnect")
 async def google_calendar_disconnect(
-    tenant=Depends(get_current_tenant),
+    tenant=Depends(get_current_user_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """Disconnect Google Calendar integration for the current tenant."""
@@ -217,7 +217,7 @@ async def google_calendar_disconnect(
 
 @router.get("/google-calendar/calendars")
 async def google_calendar_list_calendars(
-    tenant=Depends(get_current_tenant),
+    tenant=Depends(get_current_user_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """List available Google Calendars for the connected account."""
@@ -253,7 +253,7 @@ async def google_calendar_list_calendars(
 @router.put("/google-calendar/config")
 async def google_calendar_update_config(
     config: dict,
-    tenant=Depends(get_current_tenant),
+    tenant=Depends(get_current_user_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """Update Google Calendar config (e.g. which calendar_id to use)."""
