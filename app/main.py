@@ -49,12 +49,18 @@ app = FastAPI(
 )
 
 # CORS middleware
+cors_origins = [settings.FRONTEND_URL]
+if settings.ENVIRONMENT == "development":
+    cors_origins.append("http://localhost:3001")
+    cors_origins.append("http://localhost:3000")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_origin_regex=r"https://nexa-ai-vapi-frontend.*\.vercel\.app",
 )
 
 # API routes
