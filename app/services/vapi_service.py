@@ -470,19 +470,43 @@ class VAPIService:
         from app.integrations.google_calendar_client import GoogleCalendarClient
 
         integration_service = IntegrationService(self.db)
-        creds = await integration_service.get_credentials(
-            tenant_id=tenant.id,
-            integration_type="google_calendar",
-        )
-
-        if not creds:
-            return None, None
 
         integration = await integration_service.get_integration(
             tenant_id=tenant.id,
             integration_type="google_calendar",
         )
+        logger.debug(
+            "calendar_integration_lookup",
+            tenant_id=str(tenant.id),
+            found=integration is not None,
+            status=integration.status if integration else None,
+        )
+
+        if not integration:
+            logger.warning("calendar_no_integration", tenant_id=str(tenant.id))
+            return None, None
+
+        creds = await integration_service.get_credentials(
+            tenant_id=tenant.id,
+            integration_type="google_calendar",
+        )
+        logger.debug(
+            "calendar_credentials_lookup",
+            tenant_id=str(tenant.id),
+            has_creds=creds is not None,
+            cred_keys=list(creds.keys()) if creds else None,
+        )
+
+        if not creds:
+            logger.warning("calendar_no_credentials", tenant_id=str(tenant.id))
+            return None, None
+
         calendar_id = (integration.config or {}).get("calendar_id", "primary")
+        logger.debug(
+            "calendar_client_ready",
+            tenant_id=str(tenant.id),
+            calendar_id=calendar_id,
+        )
 
         client = GoogleCalendarClient(creds)
         return client, calendar_id
